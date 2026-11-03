@@ -1,12 +1,12 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { BookOpen, ClipboardCheck, FileText, Gauge, LayoutDashboard, RotateCcw, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
+import { BookOpen, ClipboardCheck, Database, FileText, Gauge, LayoutDashboard, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
 import { useStore } from '../data/store';
 import { isLate } from '../data/utils';
-import { ThemeToggle } from './ui';
+import { ThemeToggle, Toast } from './ui';
 
 export default function Layout() {
-  const { db, reset } = useStore();
+  const { db, toast } = useStore();
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   const late = db.ncs.filter(isLate).length;
@@ -17,6 +17,7 @@ export default function Layout() {
     { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
     { to: '/documentos', label: 'Documentos', icon: FileText },
     { to: '/indicadores', label: 'Indicadores', icon: Gauge },
+    { to: '/dados', label: 'Dados e backup', icon: Database },
     { to: '/sobre', label: 'Sobre o projeto', icon: BookOpen },
   ];
   return (
@@ -35,16 +36,14 @@ export default function Layout() {
         </nav>
         <div className="side-foot">
           <ThemeToggle />
-          <span className="note">Os dados ficam salvos só neste navegador.</span>
-          <button className="btn small ghost note" style={{ justifyContent: 'flex-start', paddingLeft: 0 }} onClick={() => { if (confirm('Restaurar os dados de exemplo? As alterações feitas neste navegador serão perdidas.')) reset(); }}>
-            <RotateCcw />Restaurar dados de exemplo
-          </button>
+          <span className="note">Os dados ficam salvos neste navegador. Faça backup em <NavLink to="/dados">Dados e backup</NavLink>.</span>
         </div>
       </aside>
       <div className="main">
         <Outlet />
         <footer className="foot">Projeto de portfólio de Breno Silva · Rotalume é uma empresa fictícia e todos os dados são simulados.</footer>
       </div>
+      {toast && <Toast key={toast.id} msg={toast.msg} />}
     </div>
   );
 }

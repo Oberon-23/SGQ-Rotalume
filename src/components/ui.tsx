@@ -41,6 +41,32 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
 
 export const Empty = ({ children }: { children: ReactNode }) => <div className="empty">{children}</div>;
 
+/** Confirmação para ações destrutivas. Se `blocked` vier preenchido, explica por que não dá para excluir. */
+export function Confirm({ title, children, confirmLabel = 'Excluir', onConfirm, onClose, blocked }: { title: string; children: ReactNode; confirmLabel?: string; onConfirm: () => void; onClose: () => void; blocked?: boolean }) {
+  return (
+    <Modal title={title} onClose={onClose}
+      footer={blocked ? <button className="btn" onClick={onClose}>Entendi</button>
+        : <><button className="btn" onClick={onClose}>Cancelar</button><button className="btn danger-solid" onClick={onConfirm}>{confirmLabel}</button></>}>
+      <div className="prose" style={{ fontSize: 14.5 }}>{children}</div>
+    </Modal>
+  );
+}
+
+/** Lista editada como texto, um item por linha (usada no SIPOC). */
+export function LinesField({ label, value, onChange, placeholder }: { label: string; value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+  const [text, setText] = useState(value.join('\n'));
+  return (
+    <label className="field"><span>{label}</span>
+      <textarea className="input" rows={4} value={text} placeholder={placeholder}
+        onChange={(e) => { setText(e.target.value); onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean)); }} />
+    </label>
+  );
+}
+
+export function Toast({ msg }: { msg: string }) {
+  return <div className="toast" role="status" aria-live="polite"><CheckCircle2 size={16} />{msg}</div>;
+}
+
 /** Linha com faixa de meta, para os indicadores. */
 export function LineChart({ k, height = 220 }: { k: KPI; height?: number }) {
   const W = 640, H = height, L = 46, R = 12, T = 16, B = 28;

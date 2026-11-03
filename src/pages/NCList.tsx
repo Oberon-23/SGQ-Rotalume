@@ -19,21 +19,31 @@ export function newNC(codes: string[], data: { title: string; description: strin
   };
 }
 
-export function NCForm({ onClose, initial }: { onClose: () => void; initial?: Partial<{ title: string; description: string; processId: string; origin: Origin; auditId: string }> }) {
-  const { db, update } = useStore();
+/** Registro de NC. Com `nc`, edita os dados gerais de uma NC existente, em qualquer etapa. */
+export function NCForm({ onClose, nc }: { onClose: () => void; nc?: NonConformity }) {
+  const { db, update, notify } = useStore();
   const nav = useNavigate();
-  const [f, setF] = useState({ title: '', description: '', processId: db.processes[5].id, origin: 'Inspeção de processo' as Origin, severity: 'Menor' as Severity, owner: '', dueAt: addDays(today(), 30), containment: '', ...initial });
+  const [f, setF] = useState(nc
+    ? { title: nc.title, description: nc.description, processId: nc.processId, origin: nc.origin, severity: nc.severity, owner: nc.owner, dueAt: nc.dueAt, containment: nc.containment }
+    : { title: '', description: '', processId: (db.processes.find((p) => p.type === 'principal') ?? db.processes[0])?.id ?? '', origin: 'Inspeção de processo' as Origin, severity: 'Menor' as Severity, owner: '', dueAt: addDays(today(), 30), containment: '' });
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
-  const ok = f.title.trim() && f.owner.trim();
+  const ok = f.title.trim() && f.owner.trim() && f.processId && f.dueAt;
   const save = () => {
-    const nc = newNC(db.ncs.map((n) => n.code), f);
-    update((d) => { d.ncs.unshift(nc); });
+    if (nc) {
+      update((d) => { const x = d.ncs.find((y) => y.id === nc.id); if (x) Object.assign(x, f); });
+      notify('Dados da não conformidade atualizados.');
+      onClose();
+      return;
+    }
+    const n = newNC(db.ncs.map((x) => x.code), f);
+    update((d) => { d.ncs.unshift(n); });
+    notify(`${n.code} registrada.`);
     onClose();
-    nav(`/nao-conformidades/${nc.id}`);
+    nav(`/nao-conformidades/${n.id}`);
   };
   return (
-    <Modal title="Registrar não conformidade" onClose={onClose}
-      footer={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn primary" disabled={!ok} onClick={save}>Registrar</button></>}>
+    <Modal title={nc ? `Editar ${nc.code}` : 'Registrar não conformidade'} onClose={onClose}
+      footer={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn primary" disabled={!ok} onClick={save}>{nc ? 'Salvar' : 'Registrar'}</button></>}>
       <div className="form-grid">
         <label className="field full"><span>Título *</span><input className="input" value={f.title} onChange={set('title')} placeholder="Ex.: Diâmetro do eixo fora da especificação" /></label>
         <label className="field full"><span>O que aconteceu</span><textarea className="input" value={f.description} onChange={set('description')} placeholder="Onde, quando, quantas peças, como foi detectado" /></label>

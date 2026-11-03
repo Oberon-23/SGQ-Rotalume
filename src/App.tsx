@@ -9,6 +9,7 @@ import Audits, { AuditDetail } from './pages/Audits';
 import Documents, { DocumentDetail } from './pages/Documents';
 import Indicators, { IndicatorDetail } from './pages/Indicators';
 import About from './pages/About';
+import Data from './pages/Data';
 
 const NotFound = () => <div className="page"><h1>Página não encontrada</h1><p className="ink2">Esse endereço não existe no sistema.</p><Link className="btn" to="/" style={{ justifySelf: 'start' }}>Voltar ao painel</Link></div>;
 
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="documentos/:id" element={<DocumentDetail />} />
             <Route path="indicadores" element={<Indicators />} />
             <Route path="indicadores/:id" element={<IndicatorDetail />} />
+            <Route path="dados" element={<Data />} />
             <Route path="sobre" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Route>

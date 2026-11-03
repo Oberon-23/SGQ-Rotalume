@@ -269,3 +269,25 @@ textarea.input { resize: vertical; min-height: 70px; line-height: 1.45; }
   .modal { padding: 18px; }
 }
 @media (max-width: 520px) { .sipoc { grid-template-columns: minmax(0, 1fr); } .action-grid { grid-template-columns: minmax(0, 1fr); } .action-grid .w2 { grid-column: auto; } }
+
+/* ---------- edição ---------- */
+.btn.danger-solid { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.danger-solid:hover { filter: brightness(1.08); }
+.head-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; display: inline-flex; gap: 8px; align-items: center; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,.25); max-width: calc(100vw - 32px); animation: toast-in .2s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+.sipoc-form { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.sub-h { font-size: 13px; font-weight: 700; color: var(--ink-2); margin: 4px 0 -4px; text-transform: uppercase; letter-spacing: .04em; }
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.data-grid .card { display: grid; gap: 10px; align-content: start; }
+.data-grid .card p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.data-grid .card .btn { justify-self: start; }
+.check-row .rm-item { justify-self: end; }
+@media (max-width: 900px) {
+  .sipoc-form { grid-template-columns: minmax(0, 1fr); }
+  .head-actions { width: 100%; }
+  .head-actions .btn { flex: 1 1 auto; }
+}
+.side-foot .note a { color: inherit; }
+.add-item { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+@media (max-width: 560px) { .add-item { grid-template-columns: 90px minmax(0, 1fr); } .add-item .btn { grid-column: 1 / -1; } }

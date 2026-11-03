@@ -21,25 +21,44 @@ interface Store {
   /** Altera uma cópia do banco e salva. */
   update: (fn: (draft: DB) => void) => void;
   reset: () => void;
+  replace: (db: DB) => void;
   saved: boolean;
+  toast: { id: number; msg: string } | null;
+  notify: (msg: string) => void;
 }
 
 const Ctx = createContext<Store | null>(null);
 
+/** Confere se um arquivo importado tem o formato do banco. */
+export function isDB(x: unknown): x is DB {
+  const d = x as DB;
+  return !!d && typeof d === 'object' && d.version === DB_VERSION &&
+    ['processes', 'ncs', 'audits', 'docs', 'kpis'].every((k) => Array.isArray((d as unknown as Record<string, unknown>)[k]));
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<DB>(load);
   const [saved, setSaved] = useState(true);
+  const [toast, setToast] = useState<Store['toast']>(null);
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(db)); setSaved(true); } catch { setSaved(false); }
   }, [db]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const update = useCallback((fn: (draft: DB) => void) => {
     setDb((cur) => { const next = structuredClone(cur); fn(next); return next; });
   }, []);
   const reset = useCallback(() => setDb(seed()), []);
+  const replace = useCallback((d: DB) => setDb(d), []);
+  const notify = useCallback((msg: string) => setToast({ id: Date.now(), msg }), []);
 
-  const value = useMemo(() => ({ db, update, reset, saved }), [db, update, reset, saved]);
+  const value = useMemo(() => ({ db, update, reset, replace, saved, toast, notify }), [db, update, reset, replace, saved, toast, notify]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

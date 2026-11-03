@@ -1,19 +1,22 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Check, Pencil, Plus, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
 import { useStore } from '../data/store';
 import type { Action, NCStage, NonConformity, Origin, Severity, SixM } from '../data/types';
 import { SIX_M } from '../data/types';
 import { addDays, blockers, brl, daysBetween, fmtDate, isLate, STAGES, stageIndex, today, uid } from '../data/utils';
-import { Empty, SeverityPill, StagePill } from '../components/ui';
+import { Confirm, Empty, SeverityPill, StagePill } from '../components/ui';
+import { NCForm } from './NCList';
 
 const ORIGINS: Origin[] = ['Inspeção de processo', 'Auditoria interna', 'Reclamação de cliente', 'Fornecedor', 'Metrologia'];
 
 export default function NCDetail() {
   const { id } = useParams();
-  const { db, update } = useStore();
+  const { db, update, notify } = useStore();
+  const navTo = useNavigate();
   const nc = db.ncs.find((n) => n.id === id);
   const [view, setView] = useState<NCStage | null>(null);
+  const [modal, setModal] = useState<'edit' | 'delete' | 'back' | 'reopen' | null>(null);
   if (!nc) return <div className="page"><Link className="crumb" to="/nao-conformidades"><ArrowLeft size={14} />Não conformidades</Link><Empty>Não conformidade não encontrada.</Empty></div>;
 
   const set = (fn: (n: NonConformity) => void) => update((d) => { const n = d.ncs.find((x) => x.id === nc.id); if (n) fn(n); });
@@ -35,6 +38,14 @@ export default function NCDetail() {
     setView(null);
   };
   const backToAnalysis = () => { set((n) => { n.stage = 'analise'; n.verification = { effective: null, evidence: '', date: '' }; n.actions.forEach((a) => { a.done = false; }); }); setView(null); };
+  const prev = cur > 0 && nc.stage !== 'encerrada' ? STAGES[cur - 1] : undefined;
+  const stepBack = () => { if (!prev) return; set((n) => { n.stage = prev.id; }); setView(null); setModal(null); notify(`Voltou para "${prev.label}". A etapa pode ser editada de novo.`); };
+  const reopen = () => { set((n) => { n.stage = 'verificacao'; n.closedAt = undefined; }); setView(null); setModal(null); notify(`${nc.code} reaberta na verificação de eficácia.`); };
+  const remove = () => {
+    update((d) => { d.ncs = d.ncs.filter((x) => x.id !== nc.id); d.audits.forEach((a) => a.items.forEach((i) => { if (i.ncId === nc.id) i.ncId = undefined; })); });
+    notify(`${nc.code} excluída.`);
+    navTo('/nao-conformidades');
+  };
 
   return (
     <div className="page">
@@ -51,6 +62,12 @@ export default function NCDetail() {
               <span>Aberta em <b>{fmtDate(nc.openedAt)}</b></span>
               <span>Prazo <b>{fmtDate(nc.dueAt)}</b></span>
             </div>
+          </div>
+          <div className="head-actions">
+            <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar dados</button>
+            {prev && <button className="btn" onClick={() => setModal('back')}><Undo2 />Voltar etapa</button>}
+            {nc.stage === 'encerrada' && <button className="btn" onClick={() => setModal('reopen')}><RotateCcw />Reabrir</button>}
+            <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir não conformidade"><Trash2 />Excluir</button>
           </div>
         </div>
       </div>
@@ -71,7 +88,7 @@ export default function NCDetail() {
       {shown === 'registro' && (
         <section className="card">
           <h2>Registro e contenção</h2>
-          <p className="how">Descreva o problema com fatos e registre o que foi feito de imediato para proteger o cliente.</p>
+          <p className="how">Descreva o problema com fatos e registre o que foi feito de imediato para proteger o cliente.{ro && ' Para alterar estes dados agora, use "Editar dados".'}</p>
           <div className="form-grid">
             <label className="field full"><span>Título</span><input className="input" disabled={ro} value={nc.title} onChange={(e) => set((n) => { n.title = e.target.value; })} /></label>
             <label className="field full"><span>O que aconteceu</span><textarea className="input" disabled={ro} value={nc.description} onChange={(e) => set((n) => { n.description = e.target.value; })} /></label>
@@ -135,6 +152,23 @@ export default function NCDetail() {
         </section>
       )}
       {view !== null && <div><button className="btn" onClick={() => setView(null)}><ArrowLeft />Voltar para a etapa atual</button></div>}
+      {modal === 'edit' && <NCForm nc={nc} onClose={() => setModal(null)} />}
+      {modal === 'back' && prev && (
+        <Confirm title={`Voltar para "${prev.label}"?`} confirmLabel="Voltar etapa" onClose={() => setModal(null)} onConfirm={stepBack}>
+          <p>A não conformidade sai de "{STAGES[cur].label}" e volta para "{prev.label}", que fica editável de novo. Nada do que foi preenchido é apagado.</p>
+        </Confirm>
+      )}
+      {modal === 'reopen' && (
+        <Confirm title={`Reabrir ${nc.code}?`} confirmLabel="Reabrir" onClose={() => setModal(null)} onConfirm={reopen}>
+          <p>Use quando o problema voltou a acontecer depois do encerramento. A NC volta para a verificação de eficácia, onde você pode marcar a ação como não eficaz e refazer a análise.</p>
+        </Confirm>
+      )}
+      {modal === 'delete' && (
+        <Confirm title={`Excluir ${nc.code}?`} onClose={() => setModal(null)} onConfirm={remove}>
+          <p>A não conformidade, a análise de causa e o plano de ação serão apagados.{nc.auditId ? ' O item da auditoria de origem volta a ficar sem tratamento.' : ''}</p>
+          <p>Em um SGQ real, o normal é encerrar ou cancelar em vez de excluir. Use a exclusão para registros feitos por engano.</p>
+        </Confirm>
+      )}
     </div>
   );
 }

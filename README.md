@@ -20,8 +20,21 @@ Os painéis anteriores (Service Desk, Qualidade) **mostram** números. Este proj
 | **Auditorias internas** | Programa de auditorias por processo e checklist com 10 requisitos (C / NC / OBS / OM). Uma constatação de NC abre a não conformidade já vinculada | 9.2 |
 | **Documentos** | Lista mestra com revisões, histórico de versões, status e prazo de revisão periódica | 7.5 |
 | **Indicadores** | KPIs com meta e sentido (maior/menor é melhor), série mensal, lançamento de resultado e alertas fora da meta | 9.1 |
+| **Dados e backup** | Backup .json, restauração, exportação CSV e dados de exemplo | — |
 
 ![Não conformidade com Ishikawa](docs/nc.png)
+
+## Tudo é editável
+
+| Módulo | Criar | Editar | Excluir |
+|---|---|---|---|
+| Processos | Novo processo com SIPOC | Nome, dono, tipo, objetivo e SIPOC (um item por linha) | Bloqueado enquanto houver NCs, documentos, indicadores ou auditorias ligados |
+| Não conformidades | Registro | Dados gerais em qualquer etapa, voltar etapa, reabrir NC encerrada | Sim (limpa o vínculo com a auditoria de origem) |
+| Auditorias | Programar | Processo, auditor, data, escopo; incluir e remover requisitos do checklist | Sim |
+| Documentos | Novo documento | Dados gerais, prazo de revisão, status (vigente, em revisão, obsoleto), nova revisão | Sim |
+| Indicadores | Novo indicador | Meta, sentido, unidade, fórmula; editar e excluir resultados mensais | Sim |
+
+Toda exclusão pede confirmação, e cada ação mostra um aviso de confirmação na tela.
 
 ## Regras que o sistema impõe
 
@@ -30,12 +43,16 @@ Os painéis anteriores (Service Desk, Qualidade) **mostram** números. Este proj
 - Ações e NCs vencidas aparecem em vermelho no painel e na navegação.
 - Toda constatação de NC em auditoria precisa de tratamento. O item do checklist mostra o vínculo com a NC aberta.
 - Ao publicar uma nova revisão de documento, o prazo de revisão é renovado e o histórico é preservado.
+- O auditor não pode ser o dono do processo auditado (independência, ISO 9001 9.2.2).
 
 ## Dados
 
 - Os dados de exemplo são gerados em relação à data de hoje, então prazos e vencimentos sempre fazem sentido: 13 processos, 12 NCs, 6 auditorias, 12 documentos e 8 indicadores com 12 meses de histórico.
 - Tudo que você cria ou altera fica salvo no **localStorage** do navegador. Não há servidor nem login.
-- O botão **Restaurar dados de exemplo** volta ao estado inicial.
+- A página **Dados e backup** permite:
+  - baixar e restaurar um backup completo em .json (para levar a outro navegador ou computador);
+  - exportar não conformidades e indicadores em CSV (separado por ponto e vírgula, abre direto no Excel ou no Power BI);
+  - restaurar os dados de exemplo.
 
 ## Stack
 
