@@ -1,6 +1,6 @@
 # SGQ Rotalume · Sistema de gestão da qualidade
 
-[![CI](https://github.com/Oberon-23/sgq-rotalume/actions/workflows/ci.yml/badge.svg)](https://github.com/Oberon-23/sgq-rotalume/actions/workflows/ci.yml)
+[![CI](https://github.com/Oberon-23/SGQ-Rotalume/actions/workflows/ci.yml/badge.svg)](https://github.com/Oberon-23/SGQ-Rotalume/actions/workflows/ci.yml)
 
 Sistema web de gestão da qualidade (SGQ) aderente à ISO 9001:2015, construído para a **Rotalume Indústria**, uma fábrica de componentes metálicos **fictícia**. Cobre não conformidades com PDCA, mapa de processos com SIPOC, riscos e oportunidades, auditorias internas, documentos, indicadores e análise crítica pela direção, com perfis de acesso, trilha de auditoria e relatórios em PDF.
 
