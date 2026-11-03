@@ -5,6 +5,7 @@ import { useStore } from '../data/store';
 import type { Doc, DocStatus, DocType } from '../data/types';
 import { addMonths, daysBetween, docDueSoon, docOverdue, fmtDate, today } from '../data/utils';
 import { Confirm, Empty, Modal } from '../components/ui';
+import { Pager, SortTh, useTable } from '../components/Table';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 
@@ -53,6 +54,10 @@ function DocForm({ initial, onClose }: { initial?: Doc; onClose: () => void }) {
   );
 }
 
+const DOC_COLS = (pname: (id: string) => string) => ({
+  code: (d: Doc) => d.code, type: (d: Doc) => d.type, proc: (d: Doc) => pname(d.processId), ver: (d: Doc) => d.version, status: (d: Doc) => d.status, next: (d: Doc) => (d.status === 'obsoleto' ? '' : d.nextReview),
+});
+
 export default function Documents() {
   const { db, can } = useStore();
   const nav = useNavigate();
@@ -63,6 +68,7 @@ export default function Documents() {
   const pname = (id: string) => db.processes.find((p) => p.id === id)?.name ?? '—';
   const rows = db.docs.filter((d) => (!type || d.type === type) && (status === 'todos' || (status === 'ativos' ? d.status !== 'obsoleto' : status === 'vencidos' ? docOverdue(d) : d.status === status))
     && (!q || `${d.code} ${d.title} ${d.owner}`.toLowerCase().includes(q.toLowerCase()))).sort((a, b) => a.code.localeCompare(b.code));
+  const t = useTable(rows, DOC_COLS(pname));
   return (
     <div className="page">
       <div className="page-head">
@@ -78,8 +84,8 @@ export default function Documents() {
         {rows.length ? (
           <div className="tscroll" style={{ border: 0 }}>
             <table>
-              <thead><tr><th>Documento</th><th>Tipo</th><th>Processo</th><th>Revisão</th><th>Situação</th><th>Próxima revisão</th></tr></thead>
-              <tbody>{rows.map((d) => (
+              <thead><tr><SortTh t={t} k="code">Documento</SortTh><SortTh t={t} k="type">Tipo</SortTh><SortTh t={t} k="proc">Processo</SortTh><SortTh t={t} k="ver">Revisão</SortTh><SortTh t={t} k="status">Situação</SortTh><SortTh t={t} k="next">Próxima revisão</SortTh></tr></thead>
+              <tbody>{t.view.map((d) => (
                 <tr key={d.id} className="link" onClick={() => nav(`/documentos/${d.id}`)}>
                   <td><Link to={`/documentos/${d.id}`} style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}><div className="t mono" style={{ fontSize: 13.5 }}>{d.code}</div><div className="s">{d.title}</div></Link></td>
                   <td style={{ whiteSpace: 'nowrap' }}>{d.type}</td><td>{pname(d.processId)}</td>
@@ -91,6 +97,7 @@ export default function Documents() {
             </table>
           </div>
         ) : <Empty>Nenhum documento com esses filtros.</Empty>}
+        {rows.length > 0 && <Pager t={t} noun="documentos" />}
       </div>
       {creating && <DocForm onClose={() => setCreating(false)} />}
     </div>

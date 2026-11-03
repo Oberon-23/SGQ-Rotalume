@@ -1,19 +1,35 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { BookOpen, ClipboardCheck, Database, FileText, Gauge, LayoutDashboard, Presentation, ShieldAlert, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
-import DemoBar from './DemoBar';
+import { useEffect, useState } from 'react';
+import { BookOpen, ClipboardCheck, ClipboardList, Database, FileText, Gauge, LayoutDashboard, Presentation, ShieldAlert, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
+import TopBar from './DemoBar';
+import SearchPalette from './Search';
+import Tour, { tourSeen } from './Tour';
+import { tasksFor } from '../data/pending';
 import { useStore } from '../data/store';
 import { isLate } from '../data/utils';
 import { ThemeToggle, Toast } from './ui';
 
 export default function Layout() {
-  const { db, toast } = useStore();
+  const { db, toast, user } = useStore();
   const { pathname } = useLocation();
+  const [searching, setSearching] = useState(false);
+  const [touring, setTouring] = useState(() => !tourSeen());
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+      if ((e.key === 'k' || e.key === 'K') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); setSearching(true); }
+      else if (e.key === '/' && !typing && !document.querySelector('.overlay')) { e.preventDefault(); setSearching(true); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
   const late = db.ncs.filter(isLate).length;
+  const myLate = user.role === 'leitor' ? 0 : tasksFor(db, user.name).filter((t) => (t.days ?? 1) < 0).length;
   const links = [
     { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
-    { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late },
+    { to: '/minhas-pendencias', label: 'Minhas pendências', icon: ClipboardList, count: myLate, countTitle: 'pendências vencidas' },
+    { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late, countTitle: 'não conformidades vencidas' },
     { to: '/processos', label: 'Processos', icon: Workflow },
     { to: '/riscos', label: 'Riscos e oportunidades', icon: ShieldAlert },
     { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
@@ -31,9 +47,9 @@ export default function Layout() {
         </div>
         <nav className="nav" aria-label="Módulos">
           <span className="nav-label">Módulos</span>
-          {links.map(({ to, label, icon: Icon, end, count }) => (
+          {links.map(({ to, label, icon: Icon, end, count, countTitle }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
-              <Icon />{label}{count ? <span className="count" title={`${count} vencidas`}>{count}</span> : null}
+              <Icon />{label}{count ? <span className="count" title={`${count} ${countTitle}`} aria-label={`${count} ${countTitle}`}>{count}</span> : null}
             </NavLink>
           ))}
         </nav>
@@ -43,11 +59,13 @@ export default function Layout() {
         </div>
       </aside>
       <div className="main">
-        <DemoBar />
+        <TopBar onSearch={() => setSearching(true)} onHelp={() => setTouring(true)} />
         <Outlet />
         <footer className="foot">Projeto de portfólio de Breno Silva · Rotalume é uma empresa fictícia e todos os dados são simulados.</footer>
       </div>
       {toast && <Toast key={toast.id} msg={toast.msg} />}
+      {searching && <SearchPalette onClose={() => setSearching(false)} />}
+      {touring && <Tour onClose={() => setTouring(false)} />}
     </div>
   );
 }

@@ -157,3 +157,35 @@ describe('análise crítica', () => {
     expect(a).toBe('2 de 4 decisões anteriores concluídas.');
   });
 });
+
+describe('pendências e notificações', () => {
+  it('junta NC, ações, documentos, auditorias, riscos e decisões da pessoa', async () => {
+    const { tasksFor, notifications } = await import('./pending');
+    const db = fresh();
+    const bianca = tasksFor(db, 'Bianca Rocha');
+    expect(bianca.map((t) => t.kind)).toEqual(expect.arrayContaining(['nc', 'risco', 'decisao']));
+    expect(bianca.every((t, i, a) => i === 0 || (a[i - 1].due ?? '') <= (t.due ?? '9999'))).toBe(true); // prazo mais curto primeiro
+    const rafael = tasksFor(db, 'Rafael Duarte');
+    expect(rafael.some((t) => t.kind === 'auditoria')).toBe(true);
+    expect(rafael.some((t) => t.kind === 'acao')).toBe(true);
+    expect(notifications(rafael).every((t) => (t.days ?? 99) <= 7)).toBe(true);
+  });
+  it('não lista NC encerrada nem ação concluída', async () => {
+    const { tasksFor } = await import('./pending');
+    const ids = tasksFor(fresh(), 'Diego Moraes').map((t) => t.id);
+    expect(ids).not.toContain('nc-nc-2026-058'); // encerrada
+    expect(ids).toContain('nc-nc-2026-073');
+  });
+});
+
+describe('busca geral', () => {
+  it('acha por código, assunto e pessoa, sem acento', async () => {
+    const { buildIndex, search } = await import('../components/Search');
+    const idx = buildIndex(fresh());
+    expect(search(idx, 'nc-2026-069')[0].id).toBe('nc-2026-069');
+    expect(search(idx, 'parafuso').map((h) => h.entity)).toEqual(expect.arrayContaining(['ncs', 'risks', 'audits']));
+    expect(search(idx, 'calibracao').length).toBeGreaterThan(0);
+    expect(search(idx, 'bianca rocha').some((h) => h.entity === 'processes')).toBe(true);
+    expect(search(idx, '   ')).toEqual([]);
+  });
+});

@@ -5,6 +5,7 @@ import { useStore } from '../data/store';
 import type { Risk, RiskKind, RiskStatus } from '../data/types';
 import { BENEFIT_LABEL, IMPACT_LABEL, OPP_TREATMENTS, PROB_LABEL, RISK_TREATMENTS, addDays, daysBetween, fmtDate, riskLevel, today } from '../data/utils';
 import { Confirm, Empty, Headline, Modal } from '../components/ui';
+import { Pager, SortTh, useTable } from '../components/Table';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 
@@ -105,6 +106,9 @@ export default function Risks() {
   const base = db.risks.filter((r) => (kind === 'todos' || r.kind === kind) && (!proc || r.processId === proc) && (!status || r.status === status));
   const rows = base.filter((r) => !cell || `${r.probability}-${r.impact}` === cell)
     .sort((a, b) => b.probability * b.impact - a.probability * a.impact || a.code.localeCompare(b.code));
+  const t = useTable(rows, {
+    title: (r: Risk) => r.title, level: (r: Risk) => r.probability * r.impact, treat: (r: Risk) => r.treatment, owner: (r: Risk) => r.owner, review: (r: Risk) => r.reviewAt, status: (r: Risk) => ['aberto', 'tratamento', 'controlado'].indexOf(r.status),
+  });
   const risks = db.risks.filter((r) => r.kind === 'risco');
   const hot = risks.filter((r) => r.probability * r.impact >= 10 && r.status !== 'controlado');
   const late = db.risks.filter(reviewLate);
@@ -144,8 +148,8 @@ export default function Risks() {
           {rows.length ? (
             <div className="tscroll" style={{ border: 0 }}>
               <table>
-                <thead><tr><th>Registro</th><th>Nível</th><th>Tratamento</th><th>Responsável</th><th>Reavaliar</th><th>Situação</th></tr></thead>
-                <tbody>{rows.map((r) => (
+                <thead><tr><SortTh t={t} k="title">Registro</SortTh><SortTh t={t} k="level">Nível</SortTh><SortTh t={t} k="treat">Tratamento</SortTh><SortTh t={t} k="owner">Responsável</SortTh><SortTh t={t} k="review">Reavaliar</SortTh><SortTh t={t} k="status">Situação</SortTh></tr></thead>
+                <tbody>{t.view.map((r) => (
                   <tr key={r.id} className="link" onClick={() => nav(`/riscos/${r.id}`)}>
                     <td><Link to={`/riscos/${r.id}`} style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}><div className="t">{r.title}</div><div className="s"><span className="mono">{r.code}</span> · {pname(r.processId)}</div></Link></td>
                     <td style={{ whiteSpace: 'nowrap' }}><LevelPill r={r} /></td>
@@ -158,6 +162,7 @@ export default function Risks() {
               </table>
             </div>
           ) : <Empty>Nenhum registro com esses filtros.</Empty>}
+          {rows.length > 0 && <Pager t={t} noun="registros" />}
         </section>
       </div>
       {creating && <RiskForm onClose={() => setCreating(false)} />}

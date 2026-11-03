@@ -5,21 +5,9 @@ import type { DB, Entity } from '../data/types';
 import { ENTITY_LABEL } from '../data/changes';
 import { ROLE_LABEL } from '../data/access';
 import { LogLine, fmtDateTime } from '../components/History';
+import { csv, download } from '../data/csv';
 import { fmtDate, stageLabel, today } from '../data/utils';
 import { Confirm } from '../components/ui';
-
-function download(name: string, content: string, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const a = document.createElement('a');
-  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-/** CSV com ponto e vírgula e BOM, para abrir certo no Excel em português. */
-function csv(rows: (string | number | undefined)[][]) {
-  const cell = (v: string | number | undefined) => { const s = v === undefined ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v; return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  return '﻿' + rows.map((r) => r.map(cell).join(';')).join('\r\n');
-}
 
 export default function Data() {
   const { db, replace, reset, notify, can, sourceName } = useStore();

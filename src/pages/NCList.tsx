@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { CalendarClock, Download, Plus, UserPen, X } from 'lucide-react';
+import { Pager, SortTh, useTable, type Columns } from '../components/Table';
+import { csv, download } from '../data/csv';
 import { nextCode, useStore } from '../data/store';
 import type { NonConformity, Origin, Severity } from '../data/types';
 import { SIX_M } from '../data/types';
-import { addDays, daysBetween, fmtDate, isLate, isOpen, STAGES, today } from '../data/utils';
+import { addDays, daysBetween, fmtDate, isLate, isOpen, STAGES, stageIndex, stageLabel, today } from '../data/utils';
 import { Empty, Modal, SeverityPill, StagePill } from '../components/ui';
 
 const ORIGINS: Origin[] = ['Inspeção de processo', 'Auditoria interna', 'Reclamação de cliente', 'Fornecedor', 'Metrologia'];
@@ -58,8 +60,13 @@ export function NCForm({ onClose, nc }: { onClose: () => void; nc?: NonConformit
   );
 }
 
+const SEV_RANK: Record<Severity, number> = { Menor: 1, Maior: 2, Crítica: 3 };
+
 export default function NCList() {
-  const { db, can } = useStore();
+  const { db, can, update, notify } = useStore();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulk, setBulk] = useState<null | 'owner' | 'due'>(null);
+  const [bulkValue, setBulkValue] = useState('');
   const nav = useNavigate();
   const [q, setQ] = useState('');
   const [stage, setStage] = useState('abertas');
@@ -73,6 +80,27 @@ export default function NCList() {
     (!proc || n.processId === proc) && (!sev || n.severity === sev) &&
     (!q || `${n.code} ${n.title} ${n.description} ${n.owner}`.toLowerCase().includes(q.toLowerCase()))
   ).sort((a, b) => (isOpen(a) === isOpen(b) ? a.dueAt.localeCompare(b.dueAt) : isOpen(a) ? -1 : 1)), [db.ncs, q, stage, proc, sev]);
+  const cols = useMemo<Columns<NonConformity>>(() => ({
+    code: (n) => n.code, proc: (n) => pname(n.processId), sev: (n) => SEV_RANK[n.severity], stage: (n) => stageIndex(n.stage), owner: (n) => n.owner, due: (n) => (n.stage === 'encerrada' ? n.closedAt : n.dueAt),
+  }), [db.processes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const t = useTable(rows, cols);
+  const sel = rows.filter((n) => selected.has(n.id));
+  const editable = sel.filter((n) => can('edit', 'ncs', n));
+  const pageAll = t.view.length > 0 && t.view.every((n) => selected.has(n.id));
+  const toggle = (id: string) => setSelected((cur) => { const x = new Set(cur); if (x.has(id)) x.delete(id); else x.add(id); return x; });
+  const togglePage = () => setSelected((cur) => { const x = new Set(cur); t.view.forEach((n) => (pageAll ? x.delete(n.id) : x.add(n.id))); return x; });
+  const applyBulk = () => {
+    const ids = new Set(editable.map((n) => n.id));
+    update((d) => d.ncs.forEach((n) => { if (ids.has(n.id)) { if (bulk === 'owner') n.owner = bulkValue.trim(); else n.dueAt = bulkValue; } }));
+    notify(`${ids.size} não conformidade${ids.size === 1 ? '' : 's'} atualizada${ids.size === 1 ? '' : 's'}.`);
+    setBulk(null); setBulkValue('');
+  };
+  const exportSel = () => {
+    const data: (string | number | undefined)[][] = [['Código', 'Título', 'Processo', 'Origem', 'Gravidade', 'Etapa', 'Responsável', 'Aberta em', 'Prazo', 'Encerrada em']];
+    sel.forEach((n) => data.push([n.code, n.title, pname(n.processId), n.origin, n.severity, stageLabel(n.stage), n.owner, n.openedAt, n.dueAt, n.closedAt]));
+    download(`nao-conformidades-selecionadas-${today()}.csv`, csv(data), 'text/csv;charset=utf-8');
+    notify(`${sel.length} não conformidade${sel.length === 1 ? '' : 's'} exportada${sel.length === 1 ? '' : 's'}.`);
+  };
 
   return (
     <div className="page">
@@ -90,13 +118,26 @@ export default function NCList() {
         <select className="input" value={sev} onChange={(e) => setSev(e.target.value)} aria-label="Gravidade"><option value="">Todas as gravidades</option>{SEVS.map((s) => <option key={s}>{s}</option>)}</select>
       </div>
       <div className="card" style={{ padding: 0 }}>
-        {rows.length ? (
+        {sel.length > 0 && (
+          <div className="bulk" role="region" aria-label="Ações em lote">
+            <b>{sel.length} selecionada{sel.length === 1 ? '' : 's'}{editable.length < sel.length ? ` (${editable.length} editáve${editable.length === 1 ? 'l' : 'is'} pelo seu perfil)` : ''}</b>
+            <button className="btn small" disabled={!editable.length} onClick={() => { setBulk('owner'); setBulkValue(''); }}><UserPen />Reatribuir responsável</button>
+            <button className="btn small" disabled={!editable.length} onClick={() => { setBulk('due'); setBulkValue(addDays(today(), 15)); }}><CalendarClock />Alterar prazo</button>
+            <button className="btn small" onClick={exportSel}><Download />Exportar CSV</button>
+            <button className="btn small ghost" onClick={() => setSelected(new Set())}><X />Limpar</button>
+          </div>
+        )}
+        {rows.length ? (<>
           <div className="tscroll" style={{ border: 0 }}>
             <table>
-              <thead><tr><th>Não conformidade</th><th>Processo</th><th>Gravidade</th><th>Etapa</th><th>Responsável</th><th>Prazo</th></tr></thead>
+              <thead><tr>
+                <th className="sel"><input type="checkbox" checked={pageAll} onChange={togglePage} aria-label="Selecionar todas desta página" /></th>
+                <SortTh t={t} k="code">Não conformidade</SortTh><SortTh t={t} k="proc">Processo</SortTh><SortTh t={t} k="sev">Gravidade</SortTh><SortTh t={t} k="stage">Etapa</SortTh><SortTh t={t} k="owner">Responsável</SortTh><SortTh t={t} k="due">Prazo</SortTh>
+              </tr></thead>
               <tbody>
-                {rows.map((n) => (
-                  <tr key={n.id} className="link" onClick={() => nav(`/nao-conformidades/${n.id}`)}>
+                {t.view.map((n) => (
+                  <tr key={n.id} className={`link${selected.has(n.id) ? ' picked' : ''}`} onClick={() => nav(`/nao-conformidades/${n.id}`)}>
+                    <td className="sel" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={selected.has(n.id)} onChange={() => toggle(n.id)} aria-label={`Selecionar ${n.code}`} /></td>
                     <td><Link to={`/nao-conformidades/${n.id}`} style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}><div className="t">{n.code}</div><div className="s">{n.title}</div></Link></td>
                     <td><div style={{ fontSize: 13.5 }}>{pname(n.processId)}</div><div className="s">{n.origin}</div></td>
                     <td><SeverityPill s={n.severity} /></td>
@@ -108,9 +149,19 @@ export default function NCList() {
               </tbody>
             </table>
           </div>
-        ) : <Empty>Nenhuma não conformidade com esses filtros.</Empty>}
+          <Pager t={t} noun="não conformidades" />
+        </>) : <Empty>Nenhuma não conformidade com esses filtros.</Empty>}
       </div>
       {creating && <NCForm onClose={() => setCreating(false)} />}
+      {bulk && (
+        <Modal title={bulk === 'owner' ? 'Reatribuir responsável' : 'Alterar prazo'} onClose={() => setBulk(null)}
+          footer={<><button className="btn" onClick={() => setBulk(null)}>Cancelar</button><button className="btn primary" disabled={!bulkValue.trim()} onClick={applyBulk}>Aplicar em {editable.length}</button></>}>
+          {bulk === 'owner'
+            ? <label className="field"><span>Novo responsável</span><input className="input" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} placeholder="Nome de quem assume o tratamento" /></label>
+            : <label className="field"><span>Novo prazo</span><input className="input" type="date" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} /></label>}
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>Vale para: {editable.map((n) => n.code).join(', ')}. Cada alteração entra no histórico do registro.{editable.length < sel.length ? ` ${sel.length - editable.length} selecionada(s) ficam de fora porque seu perfil não pode editá-las.` : ''}</p>
+        </Modal>
+      )}
     </div>
   );
 }

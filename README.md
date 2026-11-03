@@ -16,7 +16,7 @@ Os painéis anteriores do portfólio **mostram** números. Este projeto **opera*
 
 ## Experimente em 1 minuto
 
-1. Abra o sistema. Não precisa de cadastro: ele abre no **modo demonstração**, como a gestora da qualidade.
+1. Abra o sistema. Não precisa de cadastro: ele abre no **modo demonstração**, como a gestora da qualidade, com uma apresentação de 4 passos.
 2. Em **Não conformidades**, abra a NC-2026-069 e complete a análise de causa. Repare que o sistema não deixa avançar sem 3 porquês, causa raiz e categoria 6M.
 3. No topo da página, troque para **Diego Moraes (dono de processo)**: ele edita só o que é dele e não exclui nada.
 4. Gere a **RNC em PDF** de qualquer não conformidade e veja o **histórico de alterações** no fim da página.
@@ -40,6 +40,14 @@ Os painéis anteriores do portfólio **mostram** números. Este projeto **opera*
 ## O que faz parecer um sistema, e não um protótipo
 
 ![Matriz de riscos](docs/riscos.png)
+
+### Feito para o dia a dia
+
+- **Minhas pendências**: cada pessoa vê o que está com ela (NCs, ações do 5W2H, documentos a revisar, auditorias, indicadores a lançar, riscos a reavaliar, decisões da direção), do prazo mais curto ao mais longo. A gestora pode ver a fila de qualquer pessoa.
+- **Notificações**: o sino mostra prazos vencidos e dos próximos 7 dias, com contador do que ainda não foi visto.
+- **Busca geral** (`Ctrl + K` ou `/`): códigos, assuntos e pessoas em todos os módulos, sem diferenciar acentos, com navegação pelo teclado.
+- **Listas**: ordenação por coluna, paginação e, nas não conformidades, ações em lote (reatribuir responsável, alterar prazo, exportar a seleção), respeitando o perfil.
+- **Apresentação guiada** na primeira visita, reabrível pelo botão **?**.
 
 ### Perfis de acesso
 
@@ -93,6 +101,7 @@ src/
     access.ts      perfis e permissões
     changes.ts     detecção de alterações e trilha de auditoria
     review.ts      entradas da análise crítica (9.3.2)
+    pending.ts     pendências e notificações de cada pessoa
     source.ts      fonte de dados trocável + migração de versões
     store.tsx      único ponto de escrita
     seed.ts        dados de exemplo (datas relativas a hoje)
@@ -111,9 +120,9 @@ src/
 
 | Etapa | Itens |
 |---|---|
-| Feito | 7 módulos ISO, CRUD completo, perfis, trilha de auditoria, relatórios PDF, backup, testes e CI |
+| Feito | 7 módulos ISO, CRUD completo, perfis, trilha de auditoria, relatórios PDF, pendências por pessoa, notificações, busca geral, listas com lote, backup, testes e CI |
 | Próximo | Banco Postgres (Supabase), login, empresas separadas, regras de acesso no banco |
-| Depois | Anexos de evidência, e-mails de prazo, aprovação de documentos, fornecedores (IQF), treinamentos, calibração |
+| Depois | Anexos de evidência, e-mails de prazo (a regra já existe em `pending.ts`), aprovação de documentos, fornecedores (IQF), treinamentos, calibração |
 | Produto | Adequação à LGPD, planos de assinatura, importação de planilhas existentes |
 
 ## Stack e qualidade
@@ -121,7 +130,7 @@ src/
 - React 19 + TypeScript + Vite, React Router, lucide-react
 - Gráficos e matriz de risco em SVG/CSS próprios, sem biblioteca
 - Tema claro (creme), escuro e automático
-- **Vitest**: testes das regras de negócio (PDCA, matriz de risco, trilha, permissões, migração, análise crítica)
+- **Vitest**: testes das regras de negócio (PDCA, matriz de risco, trilha, permissões, migração, análise crítica, pendências, busca)
 - **GitHub Actions**: lint, testes e build a cada envio
 - Deploy na Vercel
 

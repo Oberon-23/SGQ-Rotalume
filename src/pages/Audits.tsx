@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Pencil, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react';
+import { Pager, SortTh, useTable } from '../components/Table';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 import { nextCode, useStore } from '../data/store';
@@ -56,6 +57,9 @@ export default function Audits() {
   const done = db.audits.filter((a) => a.done);
   const totals = done.reduce((s, a) => { const x = auditFindings(a); return { nc: s.nc + x.nc, obs: s.obs + x.obs, om: s.om + x.om }; }, { nc: 0, obs: 0, om: 0 });
   const covered = new Set(db.audits.map((a) => a.processId)).size;
+  const t = useTable(list, {
+    code: (a: Audit) => a.code, proc: (a: Audit) => pname(a.processId), date: (a: Audit) => a.date, auditor: (a: Audit) => a.auditor, done: (a: Audit) => (a.done ? 1 : 0), find: (a: Audit) => (a.done ? auditFindings(a).nc * 100 + auditFindings(a).obs * 10 + auditFindings(a).om : undefined),
+  });
   return (
     <div className="page">
       <div className="page-head">
@@ -70,9 +74,9 @@ export default function Audits() {
       <div className="card" style={{ padding: 0 }}>
         <div className="tscroll" style={{ border: 0 }}>
           <table>
-            <thead><tr><th>Auditoria</th><th>Processo</th><th>Data</th><th>Auditor</th><th>Situação</th><th>Constatações</th></tr></thead>
+            <thead><tr><SortTh t={t} k="code">Auditoria</SortTh><SortTh t={t} k="proc">Processo</SortTh><SortTh t={t} k="date">Data</SortTh><SortTh t={t} k="auditor">Auditor</SortTh><SortTh t={t} k="done">Situação</SortTh><SortTh t={t} k="find">Constatações</SortTh></tr></thead>
             <tbody>
-              {list.map((a) => { const x = auditFindings(a); const soon = !a.done && daysBetween(today(), a.date) <= 15; return (
+              {t.view.map((a) => { const x = auditFindings(a); const soon = !a.done && daysBetween(today(), a.date) <= 15; return (
                 <tr key={a.id} className="link" onClick={() => nav(`/auditorias/${a.id}`)}>
                   <td><Link to={`/auditorias/${a.id}`} style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}><div className="t">{a.code}</div><div className="s">{a.scope}</div></Link></td>
                   <td>{pname(a.processId)}</td>
@@ -85,6 +89,7 @@ export default function Audits() {
             </tbody>
           </table>
         </div>
+        <Pager t={t} noun="auditorias" />
       </div>
       {creating && <AuditForm onClose={() => setCreating(false)} />}
     </div>

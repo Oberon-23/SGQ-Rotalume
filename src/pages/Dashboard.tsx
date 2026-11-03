@@ -2,10 +2,14 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../data/store';
 import { auditFindings, daysBetween, docDueSoon, docOverdue, fmtDate, fmtKpi, isLate, isOpen, kpiOk, lastValue, lateActions, STAGES, today } from '../data/utils';
 import { Headline, KpiPill, SeverityPill, Sparkline, StagePill } from '../components/ui';
+import { tasksFor } from '../data/pending';
+import { TaskRow } from './MyTasks';
 
 export default function Dashboard() {
-  const { db } = useStore();
+  const { db, user } = useStore();
   const T = today();
+  const mine = user.role === 'leitor' ? [] : tasksFor(db, user.name);
+  const mineLate = mine.filter((t) => (t.days ?? 1) < 0).length;
   const pname = (id: string) => db.processes.find((p) => p.id === id)?.name ?? '—';
   const open = db.ncs.filter(isOpen);
   const late = open.filter(isLate);
@@ -31,6 +35,16 @@ export default function Dashboard() {
         {kOff.length ? `${kOff.length} de ${db.kpis.length} indicadores ficaram fora da meta no último mês.` : 'Todos os indicadores ficaram na meta no último mês.'}
         {nextAudits[0] ? ` A próxima auditoria interna é em ${fmtDate(nextAudits[0].date)}, no processo ${pname(nextAudits[0].processId)}.` : ''}
       </Headline>
+
+      {user.role !== 'leitor' && (
+        <section className="card my-strip">
+          <div className="card-h">
+            <div><h2>Suas pendências, {user.name.split(' ')[0]}</h2><p className="how" style={{ margin: '2px 0 0' }}>{mine.length ? `${mine.length} no total${mineLate ? `, ${mineLate} vencida${mineLate === 1 ? '' : 's'}` : ''}. As mais urgentes:` : 'Nada sob sua responsabilidade agora.'}</p></div>
+            <Link className="btn small" to="/minhas-pendencias">Ver todas</Link>
+          </div>
+          {mine.length > 0 && <ul className="tasks">{mine.slice(0, 3).map((t) => <TaskRow key={t.id} t={t} />)}</ul>}
+        </section>
+      )}
 
       <div className="tiles five">
         <Link className="tile" to="/nao-conformidades"><span className="lab">Não conformidades abertas</span><span className="val">{open.length}</span><span className="sub">{late.length} {late.length === 1 ? 'vencida' : 'vencidas'} · {open.filter((n) => n.severity !== 'Menor').length} maiores ou críticas</span></Link>

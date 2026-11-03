@@ -21,6 +21,7 @@ export default function About() {
           <p><b>Ferramentas da qualidade usadas:</b></p>
           <ul><li>5 Porquês e diagrama de Ishikawa (6M) para a causa raiz;</li><li>Plano de ação 5W2H;</li><li>SIPOC e mapa de processos;</li><li>Matriz de riscos 5×5 (probabilidade × impacto);</li><li>Checklist de auditoria por requisito da ISO 9001;</li><li>Indicadores com meta e sentido (maior ou menor é melhor);</li><li>Análise crítica com as entradas da cláusula 9.3.2 montadas a partir dos dados.</li></ul>
           <p><b>Perfis de demonstração:</b> no topo da página você troca entre gestora da qualidade, dono de processo, auditor e leitor para ver o que cada papel pode fazer. Toda alteração entra na trilha de auditoria com usuário, data e valor anterior.</p>
+          <p><b>No dia a dia:</b> "Minhas pendências" mostra o que está com cada pessoa, o sino avisa dos prazos, a busca (<kbd>Ctrl</kbd> + <kbd>K</kbd>) acha qualquer registro e as listas ordenam, paginam e permitem ações em lote.</p>
         </div></section>
         <section className="card s5"><h2>Como os dados funcionam</h2><div className="prose" style={{ marginTop: 10 }}>
           <p>Não há servidor. Tudo fica salvo <b>no seu navegador</b> (localStorage) e ninguém mais vê as suas alterações.</p>

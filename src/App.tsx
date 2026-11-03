@@ -13,6 +13,7 @@ import Data from './pages/Data';
 import Risks, { RiskDetail } from './pages/Risks';
 import Reviews, { ReviewDetail } from './pages/Reviews';
 import Print from './pages/Print';
+import MyTasks from './pages/MyTasks';
 
 const NotFound = () => <div className="page"><h1>Página não encontrada</h1><p className="ink2">Esse endereço não existe no sistema.</p><Link className="btn" to="/" style={{ justifySelf: 'start' }}>Voltar ao painel</Link></div>;
 
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="imprimir/:kind/:id" element={<Print />} />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
+            <Route path="minhas-pendencias" element={<MyTasks />} />
             <Route path="nao-conformidades" element={<NCList />} />
             <Route path="nao-conformidades/:id" element={<NCDetail />} />
             <Route path="processos" element={<Processes />} />

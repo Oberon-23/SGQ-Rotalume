@@ -5,6 +5,7 @@ import type { KPI } from '../data/types';
 import { useStore } from '../data/store';
 import { fmtKpi, kpiOk, lastMonths, lastValue, monthKey, monthLabel, nf } from '../data/utils';
 import { Confirm, Empty, Headline, KpiPill, LineChart, Modal, Sparkline } from '../components/ui';
+import { Pager, SortTh, useTable } from '../components/Table';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 
@@ -51,6 +52,10 @@ export default function Indicators() {
   const [creating, setCreating] = useState(false);
   const pname = (id: string) => db.processes.find((p) => p.id === id)?.name ?? '—';
   const off = db.kpis.filter((k) => { const v = lastValue(k); return v && !kpiOk(k, v.value); });
+  const t = useTable(db.kpis, {
+    name: (k: KPI) => k.name, proc: (k: KPI) => pname(k.processId), hits: (k: KPI) => (k.values.length ? k.values.filter((x) => kpiOk(k, x.value)).length / k.values.length : undefined),
+    ok: (k: KPI) => { const v = lastValue(k); return v ? (kpiOk(k, v.value) ? 1 : 0) : undefined; },
+  });
   return (
     <div className="page">
       <div className="page-head">
@@ -63,8 +68,8 @@ export default function Indicators() {
       <div className="card" style={{ padding: 0 }}>
         <div className="tscroll" style={{ border: 0 }}>
           <table>
-            <thead><tr><th>Indicador</th><th>Processo</th><th>Último mês</th><th>Meta</th><th>12 meses</th><th>Meses na meta</th><th>Situação</th></tr></thead>
-            <tbody>{db.kpis.map((k) => { const v = lastValue(k); const hits = k.values.filter((x) => kpiOk(k, x.value)).length; return (
+            <thead><tr><SortTh t={t} k="name">Indicador</SortTh><SortTh t={t} k="proc">Processo</SortTh><th>Último mês</th><th>Meta</th><th>12 meses</th><SortTh t={t} k="hits">Meses na meta</SortTh><SortTh t={t} k="ok">Situação</SortTh></tr></thead>
+            <tbody>{t.view.map((k) => { const v = lastValue(k); const hits = k.values.filter((x) => kpiOk(k, x.value)).length; return (
               <tr key={k.id} className="link" onClick={() => nav(`/indicadores/${k.id}`)}>
                 <td><Link to={`/indicadores/${k.id}`} style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}><div className="t">{k.name}</div><div className="s">{k.owner}</div></Link></td>
                 <td>{pname(k.processId)}</td>
@@ -77,6 +82,7 @@ export default function Indicators() {
             ); })}</tbody>
           </table>
         </div>
+        <Pager t={t} noun="indicadores" />
       </div>
       {creating && <KpiForm onClose={() => setCreating(false)} />}
     </div>
