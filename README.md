@@ -4,6 +4,8 @@
 
 Sistema web de gestão da qualidade (SGQ) aderente à ISO 9001:2015, construído para a **Rotalume Indústria**, uma fábrica de componentes metálicos **fictícia**. Cobre não conformidades com PDCA, mapa de processos com SIPOC, riscos e oportunidades, auditorias internas, documentos, indicadores e análise crítica pela direção, com perfis de acesso, trilha de auditoria e relatórios em PDF.
 
+**[Abrir o sistema no ar →](https://sqgrotalume.vercel.app/)** · sem cadastro, abre no modo demonstração
+
 > Projeto de portfólio de **Breno Silva**, focado em engenharia de processos e qualidade. Os dados são fictícios.
 
 ![Painel](docs/painel.png)

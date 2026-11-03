@@ -475,3 +475,6 @@ td.sel, th.sel { width: 36px; padding-right: 0; }
 td.sel input, th.sel input { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
 .tr-picked, tr.picked td { background: var(--accent-soft); }
 @media (max-width: 560px) { .demo-bar { position: relative; } .bell { position: static; } .popover { position: absolute; left: 12px; right: 12px; top: calc(100% + 4px); width: auto; } }
+.mc-stats > div { min-width: 0; }
+.mc-stats .pill { max-width: 100%; white-space: normal; line-height: 1.25; }
+@media (max-width: 560px) { .mc-stats { gap: 8px; } .mc-stats > div { padding: 10px; } .mc-stats .pill { font-size: 11.5px; padding: 3px 7px; } }
