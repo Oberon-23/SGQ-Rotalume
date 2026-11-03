@@ -5,6 +5,8 @@ import { useStore } from '../data/store';
 import type { Doc, DocStatus, DocType } from '../data/types';
 import { addMonths, daysBetween, docDueSoon, docOverdue, fmtDate, today } from '../data/utils';
 import { Confirm, Empty, Modal } from '../components/ui';
+import History from '../components/History';
+import { ReadOnlyNote } from '../components/DemoBar';
 
 const TYPES: DocType[] = ['Manual', 'Procedimento', 'Instrução de trabalho', 'Formulário'];
 const PREFIX: Record<DocType, string> = { Manual: 'MQ', Procedimento: 'PR', 'Instrução de trabalho': 'IT', Formulário: 'FR' };
@@ -52,7 +54,7 @@ function DocForm({ initial, onClose }: { initial?: Doc; onClose: () => void }) {
 }
 
 export default function Documents() {
-  const { db } = useStore();
+  const { db, can } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
@@ -65,7 +67,7 @@ export default function Documents() {
     <div className="page">
       <div className="page-head">
         <div><h1>Documentos</h1><p>Procedimentos, instruções e formulários com controle de revisão (ISO 9001:2015, cláusula 7.5). Cada documento é revisado pelo menos uma vez por ano.</p></div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo documento</button>
+        {can('create', 'docs') && <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo documento</button>}
       </div>
       <div className="toolbar">
         <input className="input search" type="search" placeholder="Buscar por código, título ou responsável" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar" />
@@ -97,13 +99,14 @@ export default function Documents() {
 
 export function DocumentDetail() {
   const { id } = useParams();
-  const { db, update, notify } = useStore();
+  const { db, update, notify, can } = useStore();
   const nav = useNavigate();
   const [rev, setRev] = useState<{ change: string; author: string } | null>(null);
   const [modal, setModal] = useState<'edit' | 'delete' | null>(null);
   const d = db.docs.find((x) => x.id === id);
   if (!d) return <div className="page"><Link className="crumb" to="/documentos"><ArrowLeft size={14} />Documentos</Link><Empty>Documento não encontrado.</Empty></div>;
   const p = db.processes.find((x) => x.id === d.processId);
+  const canEdit = can('edit', 'docs', d);
   const mentions = db.ncs.filter((n) => `${n.description} ${n.rootCause} ${n.actions.map((a) => a.how).join(' ')}`.includes(d.code));
   const setStatus = (s: DocStatus) => update((db2) => { const x = db2.docs.find((y) => y.id === d.id); if (x) x.status = s; });
   const publish = () => {
@@ -128,15 +131,16 @@ export function DocumentDetail() {
               <span>Próxima revisão <ReviewPill d={d} /></span>
             </div>
           </div>
-          <div className="head-actions">
+          {canEdit && <div className="head-actions">
             {d.status !== 'obsoleto' && <button className="btn primary" onClick={() => setRev({ change: '', author: d.owner })}><FilePlus2 />Publicar nova revisão</button>}
             {d.status === 'vigente' && <button className="btn" onClick={() => setStatus('revisao')}>Marcar em revisão</button>}
             {d.status !== 'obsoleto' ? <button className="btn ghost" onClick={() => setStatus('obsoleto')}>Tornar obsoleto</button> : <button className="btn" onClick={() => setStatus('vigente')}>Reativar</button>}
             <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar</button>
-            <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir documento"><Trash2 />Excluir</button>
-          </div>
+            {can('delete', 'docs', d) && <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir documento"><Trash2 />Excluir</button>}
+          </div>}
         </div>
       </div>
+      <ReadOnlyNote show={!canEdit} />
       <div className="grid">
         <section className="card s8">
           <h2>Histórico de revisões</h2>
@@ -151,6 +155,7 @@ export function DocumentDetail() {
           {mentions.length ? <ul className="list">{mentions.map((n) => <li key={n.id}><Link to={`/nao-conformidades/${n.id}`}><b>{n.code}</b><div className="s">{n.title}</div></Link></li>)}</ul> : <Empty>Nenhuma não conformidade cita este documento.</Empty>}
         </section>
       </div>
+      <History entity="docs" id={d.id} />
       {modal === 'edit' && <DocForm initial={d} onClose={() => setModal(null)} />}
       {modal === 'delete' && (
         <Confirm title={`Excluir ${d.code}?`} onClose={() => setModal(null)} onConfirm={remove}>

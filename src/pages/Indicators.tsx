@@ -5,6 +5,8 @@ import type { KPI } from '../data/types';
 import { useStore } from '../data/store';
 import { fmtKpi, kpiOk, lastMonths, lastValue, monthKey, monthLabel, nf } from '../data/utils';
 import { Confirm, Empty, Headline, KpiPill, LineChart, Modal, Sparkline } from '../components/ui';
+import History from '../components/History';
+import { ReadOnlyNote } from '../components/DemoBar';
 
 /** Criar indicador ou editar a definição de um existente. */
 function KpiForm({ initial, onClose }: { initial?: KPI; onClose: () => void }) {
@@ -44,7 +46,7 @@ function KpiForm({ initial, onClose }: { initial?: KPI; onClose: () => void }) {
 }
 
 export default function Indicators() {
-  const { db } = useStore();
+  const { db, can } = useStore();
   const nav = useNavigate();
   const [creating, setCreating] = useState(false);
   const pname = (id: string) => db.processes.find((p) => p.id === id)?.name ?? '—';
@@ -53,7 +55,7 @@ export default function Indicators() {
     <div className="page">
       <div className="page-head">
         <div><h1>Indicadores</h1><p>Monitoramento, medição e análise do desempenho dos processos (ISO 9001:2015, cláusula 9.1).</p></div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo indicador</button>
+        {can('create', 'kpis') && <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo indicador</button>}
       </div>
       <Headline tone={off.length ? 'warn' : 'ok'} title={off.length ? `${off.length} de ${db.kpis.length} indicadores ficaram fora da meta no último mês.` : 'Todos os indicadores ficaram na meta no último mês.'}>
         {off.length ? `Fora da meta: ${off.map((k) => k.name).join(', ')}.` : ''}
@@ -83,7 +85,7 @@ export default function Indicators() {
 
 export function IndicatorDetail() {
   const { id } = useParams();
-  const { db, update, notify } = useStore();
+  const { db, update, notify, can } = useStore();
   const nav = useNavigate();
   const [modal, setModal] = useState<'edit' | 'delete' | null>(null);
   const [delMonth, setDelMonth] = useState<string | null>(null);
@@ -93,6 +95,7 @@ export function IndicatorDetail() {
   const [mv, setMv] = useState<{ month: string; value: string } | null>(null);
   if (!k) return <div className="page"><Link className="crumb" to="/indicadores"><ArrowLeft size={14} />Indicadores</Link><Empty>Indicador não encontrado.</Empty></div>;
   const p = db.processes.find((x) => x.id === k.processId);
+  const canEdit = can('edit', 'kpis', k);
   const v = lastValue(k);
   const hits = k.values.filter((x) => kpiOk(k, x.value)).length;
   const avg = k.values.length ? k.values.reduce((s, x) => s + x.value, 0) / k.values.length : NaN;
@@ -120,13 +123,14 @@ export function IndicatorDetail() {
               <span>Meta <b>{k.higherIsBetter ? '≥' : '≤'} {fmtKpi(k, k.target)}</b></span>
             </div>
           </div>
-          <div className="head-actions">
+          {canEdit && <div className="head-actions">
             <button className="btn primary" onClick={() => setMv({ month: free[free.length - 1] ?? thisMonth, value: '' })}><Plus />Lançar resultado</button>
             <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar</button>
-            <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir indicador"><Trash2 />Excluir</button>
-          </div>
+            {can('delete', 'kpis', k) && <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir indicador"><Trash2 />Excluir</button>}
+          </div>}
         </div>
       </div>
+      <ReadOnlyNote show={!canEdit} />
       <div className="tiles">
         <div className="tile"><span className="lab">Último mês</span><span className="val">{v ? fmtKpi(k, v.value) : '—'}</span><span className="sub">{v ? monthLabel(v.month) : 'sem dados'}</span></div>
         <div className="tile"><span className="lab">Média do período</span><span className="val">{Number.isNaN(avg) ? '—' : fmtKpi(k, avg)}</span><span className="sub">{k.values.length} meses</span></div>
@@ -143,11 +147,12 @@ export function IndicatorDetail() {
           <thead><tr><th>Mês</th><th>Resultado</th><th>Situação</th><th></th></tr></thead>
           <tbody>{[...k.values].reverse().map((x) => (
             <tr key={x.month}><td>{monthLabel(x.month)}</td><td style={{ fontWeight: 650 }}>{fmtKpi(k, x.value)}</td><td><KpiPill k={k} v={x.value} /></td>
-              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}><button className="btn small ghost" onClick={() => setMv({ month: x.month, value: String(x.value).replace('.', ',') })}>Editar</button><button className="btn small ghost danger" onClick={() => setDelMonth(x.month)} aria-label={`Excluir resultado de ${monthLabel(x.month)}`}><Trash2 /></button></td></tr>
+              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{canEdit && <><button className="btn small ghost" onClick={() => setMv({ month: x.month, value: String(x.value).replace('.', ',') })}>Editar</button><button className="btn small ghost danger" onClick={() => setDelMonth(x.month)} aria-label={`Excluir resultado de ${monthLabel(x.month)}`}><Trash2 /></button></>}</td></tr>
           ))}</tbody>
         </table></div>
         {k.values.length === 0 && <Empty>Nenhum resultado lançado ainda.</Empty>}
       </section>
+      <History entity="kpis" id={k.id} />
       {modal === 'edit' && <KpiForm initial={k} onClose={() => setModal(null)} />}
       {modal === 'delete' && (
         <Confirm title={`Excluir "${k.name}"?`} onClose={() => setModal(null)} onConfirm={remove}>

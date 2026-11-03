@@ -42,7 +42,7 @@ export function blockers(nc: NonConformity): string[] {
       if (!nc.containment.trim()) b.push('Registre a ação de contenção imediata.');
       break;
     case 'analise':
-      if (nc.whys.filter((w) => w.trim()).length < 3) b.push('Responda pelo menos 3 porquês.');
+      if (nc.whys.filter((w) => (w ?? '').trim()).length < 3) b.push('Responda pelo menos 3 porquês.');
       if (!nc.rootCause.trim()) b.push('Defina a causa raiz.');
       if (!nc.category) b.push('Classifique a causa em um dos 6M.');
       break;
@@ -73,3 +73,18 @@ export const auditFindings = (a: Audit) => ({
   om: a.items.filter((i) => i.result === 'OM').length,
   pending: a.items.filter((i) => i.result === null).length,
 });
+
+/* ---------- riscos e oportunidades ---------- */
+export const PROB_LABEL = ['', 'Rara', 'Improvável', 'Possível', 'Provável', 'Quase certa'];
+export const IMPACT_LABEL = ['', 'Insignificante', 'Menor', 'Moderado', 'Maior', 'Muito grave'];
+export const BENEFIT_LABEL = ['', 'Mínimo', 'Pequeno', 'Moderado', 'Grande', 'Muito grande'];
+export const RISK_TREATMENTS = ['Mitigar', 'Evitar', 'Transferir', 'Aceitar'];
+export const OPP_TREATMENTS = ['Explorar', 'Ampliar', 'Compartilhar', 'Aceitar'];
+export type RiskTone = 'low' | 'mid' | 'high' | 'crit';
+/** Nível pela matriz 5×5: até 4 baixo, até 9 moderado, até 16 alto, acima disso crítico. */
+export function riskLevel(probability: number, impact: number, kind: 'risco' | 'oportunidade' = 'risco') {
+  const score = probability * impact;
+  const tone: RiskTone = score <= 4 ? 'low' : score <= 9 ? 'mid' : score <= 16 ? 'high' : 'crit';
+  const names = kind === 'risco' ? { low: 'Baixo', mid: 'Moderado', high: 'Alto', crit: 'Crítico' } : { low: 'Prioridade baixa', mid: 'Prioridade média', high: 'Prioridade alta', crit: 'Prioridade máxima' };
+  return { score, tone, label: names[tone] };
+}

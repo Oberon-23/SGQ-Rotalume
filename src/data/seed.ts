@@ -2,11 +2,11 @@
  * Dados fictícios da Rotalume Indústria (mesma fábrica do painel de Qualidade).
  * As datas são calculadas a partir de hoje, para os prazos nunca ficarem velhos.
  */
-import type { Action, Audit, AuditItem, DB, Doc, KPI, NonConformity, Process, SixM } from './types';
+import type { Action, Audit, AuditItem, DB, Doc, KPI, LogEntry, NonConformity, Process, Review, Risk, Role, SixM } from './types';
 import { SIX_M } from './types';
 import { addDays, addMonths, lastMonths, today } from './utils';
 
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 const emptyIshikawa = (): Record<SixM, string[]> => Object.fromEntries(SIX_M.map((m) => [m, []])) as unknown as Record<SixM, string[]>;
 
@@ -231,7 +231,72 @@ function kpis(): KPI[] {
   ];
 }
 
+export function seedRisks(T: string): Risk[] {
+  const R = (code: string, kind: Risk['kind'], processId: string, title: string, cause: string, consequence: string, probability: number, impact: number, treatment: string, action: string, owner: string, reviewIn: number, status: Risk['status']): Risk =>
+    ({ id: code.toLowerCase(), code, kind, processId, title, cause, consequence, probability, impact, treatment, action, owner, reviewAt: addDays(T, reviewIn), status });
+  return [
+    R('R-01', 'risco', 'p10', 'Fornecedor único de parafusos M8', 'Só um fornecedor qualificado para o item.', 'Parada da montagem se o fornecedor falhar (já houve duas NCs de rosca).', 4, 4, 'Mitigar', 'Qualificar um segundo fornecedor e manter estoque de segurança de 15 dias.', 'Bianca Rocha', 20, 'tratamento'),
+    R('R-02', 'risco', 'p06', 'Quebra da CNC sem máquina reserva', 'Linha 1 depende de uma única CNC.', 'Atraso de pedidos e perda de OEE.', 3, 5, 'Mitigar', 'Preventiva quinzenal e contrato de peças críticas com entrega em 48 horas.', 'Juliana Reis', 45, 'tratamento'),
+    R('R-03', 'risco', 'p08', 'Umidade alta na cabine de pintura', 'Verão com umidade acima de 75%.', 'Bolhas e escorrimento, retrabalho.', 2, 3, 'Mitigar', 'Desumidificador instalado e registro de umidade a cada 2 horas (FR-014).', 'Lucas Ferraz', 90, 'controlado'),
+    R('R-04', 'risco', 'p12', 'Instrumento vencido em uso na produção', 'Controle de calibração sem alerta.', 'Medições não confiáveis e peças fora liberadas.', 2, 4, 'Mitigar', 'Etiqueta de validade e aviso 15 dias antes do vencimento (NC-2026-070).', 'Marina Lopes', 60, 'controlado'),
+    R('R-05', 'risco', 'p13', 'Rotatividade no turno C', 'Contratações frequentes na montagem.', 'Perda de competência no aperto e variação de torque.', 3, 3, 'Mitigar', 'Treinamento prático no posto na integração e matriz de competências atualizada.', 'Eduardo Campos', 30, 'tratamento'),
+    R('R-06', 'risco', 'p03', 'Requisito do cliente mal interpretado', 'Pedidos com desenho em revisão diferente.', 'Produto fora do que o cliente pediu.', 2, 4, 'Mitigar', 'Checklist de análise crítica do pedido com conferência da revisão do desenho.', 'Fernanda Lima', 75, 'aberto'),
+    R('R-07', 'risco', 'p02', 'Cópias obsoletas de documentos nos postos', 'Recolhimento de cópias impressas não controlado.', 'Operação com instrução desatualizada (NC-2026-069).', 3, 3, 'Mitigar', 'Lista de distribuição por posto e recolhimento conferido na publicação de cada revisão.', 'Marina Lopes', -5, 'tratamento'),
+    R('R-08', 'risco', 'p05', 'Atraso de matéria-prima', 'Lead time do aço variando muito.', 'Parada de linha e atraso de entrega.', 3, 4, 'Mitigar', 'Pedido programado com 30 dias de antecedência e acompanhamento semanal.', 'Camila Prado', 15, 'aberto'),
+    R('O-01', 'oportunidade', 'p06', 'Contador de peças em todas as máquinas', 'Bom resultado na CNC da Linha 1 (AUD-2026-01).', 'Menos variação dimensional em toda a usinagem.', 4, 3, 'Explorar', 'Estender o contador de vida útil para as outras máquinas.', 'Rafael Duarte', 40, 'aberto'),
+    R('O-02', 'oportunidade', 'p10', 'Avaliação mensal de fornecedores (IQF)', 'Avaliação hoje é semestral (AUD-2026-02).', 'Reação mais rápida a fornecedor com queda de qualidade.', 4, 3, 'Explorar', 'Calcular o IQF todo mês com entregas no prazo, lotes aprovados e resposta a NCs.', 'Bianca Rocha', 25, 'tratamento'),
+    R('O-03', 'oportunidade', 'p08', 'Reaproveitar o calor da estufa de cura', 'Ar quente descartado pela chaminé.', 'Menor consumo de energia no pré-aquecimento.', 2, 3, 'Explorar', 'Estudo de viabilidade com a manutenção.', 'Lucas Ferraz', 120, 'aberto'),
+  ];
+}
+
+export function seedReviews(T: string): Review[] {
+  const date = addDays(T, -175);
+  return [{
+    id: 'acd-2026-01', code: 'ACD-2026-01', date, from: addDays(date, -182), to: date,
+    participants: 'Eduardo Campos (diretoria), Marina Lopes (qualidade), Rafael Duarte, Camila Prado, Diego Moraes, Patrícia Nunes, Lucas Ferraz',
+    context: 'Entrada de um novo cliente do setor agrícola e aumento de 20% no volume da Linha 1. Fornecedor de aço com prazos instáveis.',
+    inputs: [
+      { clause: '9.3.2 c1', title: 'Satisfação do cliente', items: ['Reclamações de cliente: 900 PPM no início do período, meta de 300 PPM.', '1 reclamação crítica de diâmetro de eixo (NC-2026-063).'] },
+      { clause: '9.3.2 c2', title: 'Objetivos da qualidade', items: ['5 de 8 indicadores na meta.', 'Fora da meta: custo da má qualidade, ações no prazo e reclamações de cliente.'] },
+      { clause: '9.3.2 c4', title: 'Não conformidades e ações corretivas', items: ['4 não conformidades no período, 2 encerradas.', 'Ações corretivas no prazo: 58%.'] },
+      { clause: '9.3.2 c6', title: 'Resultados de auditorias', items: ['AUD-2026-01 (Usinagem CNC): 1 observação e 1 oportunidade de melhoria.'] },
+      { clause: '9.3.2 f', title: 'Oportunidades de melhoria', items: ['Contador de peças por aresta em todas as máquinas.'] },
+    ],
+    decisions: [
+      { id: 'd1', text: 'Controlar a vida útil de ferramenta por número de peças em todas as CNCs.', owner: 'Rafael Duarte', due: addDays(T, -60), done: true },
+      { id: 'd2', text: 'Qualificar um segundo fornecedor de parafusos M8.', owner: 'Bianca Rocha', due: addDays(T, 20), done: false },
+      { id: 'd3', text: 'Incluir treinamento prático de aperto na integração da montagem.', owner: 'Eduardo Campos', due: addDays(T, -100), done: true },
+      { id: 'd4', text: 'Levar a meta de ações corretivas no prazo para 90%.', owner: 'Marina Lopes', due: addDays(T, -20), done: false },
+    ],
+    conclusion: 'O SGQ é adequado e eficaz, com atenção ao tratamento de ações no prazo e ao custo da má qualidade. Próxima análise crítica em seis meses.',
+    closed: true,
+  }];
+}
+
+const ROLE_OF: Record<string, Role> = { 'Marina Lopes': 'gestor', 'Rafael Duarte': 'auditor' };
+
+/** Trilha inicial coerente com os exemplos, para o histórico não começar vazio. */
+function seedLog(db: Omit<DB, 'log'>): LogEntry[] {
+  const T = today();
+  const out: LogEntry[] = [];
+  let n = 0;
+  const add = (date: string, hour: string, user: string, entity: LogEntry['entity'], entityId: string, label: string, action: LogEntry['action'], fields: LogEntry['fields'] = []) => {
+    if (date > T) return;
+    out.push({ id: `seed${n++}`, at: new Date(`${date}T${hour}:00`).toISOString(), user, role: ROLE_OF[user] ?? 'dono', entity, entityId, label, action, fields });
+  };
+  db.ncs.forEach((nc) => {
+    add(nc.openedAt, '09:14', nc.owner, 'ncs', nc.id, nc.code, 'criou');
+    if (nc.closedAt) add(nc.closedAt, '16:40', 'Marina Lopes', 'ncs', nc.id, nc.code, 'alterou', [{ field: 'Etapa', from: 'Verificação de eficácia', to: 'Encerrada' }, { field: 'Encerrada em', from: '—', to: nc.closedAt.split('-').reverse().join('/') }]);
+  });
+  db.audits.filter((a) => a.done).forEach((a) => add(a.date, '17:05', a.auditor, 'audits', a.id, a.code, 'alterou', [{ field: 'Situação', from: 'Programada', to: 'Realizada' }]));
+  db.docs.filter((d) => d.version > 0).forEach((d) => add(d.reviewedAt, '10:30', d.history[0].author, 'docs', d.id, d.code, 'alterou', [{ field: 'Revisão', from: String(d.version - 1), to: String(d.version) }]));
+  db.reviews.forEach((r) => add(r.date, '15:00', 'Marina Lopes', 'reviews', r.id, r.code, 'criou'));
+  db.risks.forEach((r, i) => add(addDays(T, -200 + i * 9), '11:20', r.owner, 'risks', r.id, r.code, 'criou'));
+  return out.sort((a, b) => b.at.localeCompare(a.at));
+}
+
 export function seed(): DB {
   const T = today();
-  return { version: DB_VERSION, seededAt: T, processes: processes(), ncs: ncs(T), audits: audits(T), docs: docs(T), kpis: kpis() };
+  const base = { version: DB_VERSION, seededAt: T, processes: processes(), ncs: ncs(T), audits: audits(T), docs: docs(T), kpis: kpis(), risks: seedRisks(T), reviews: seedReviews(T) };
+  return { ...base, log: seedLog(base) };
 }

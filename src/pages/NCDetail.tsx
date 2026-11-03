@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Pencil, Plus, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Pencil, Plus, Printer, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
+import History from '../components/History';
+import { ReadOnlyNote } from '../components/DemoBar';
 import { useStore } from '../data/store';
 import type { Action, NCStage, NonConformity, Origin, Severity, SixM } from '../data/types';
 import { SIX_M } from '../data/types';
@@ -12,7 +14,7 @@ const ORIGINS: Origin[] = ['Inspeção de processo', 'Auditoria interna', 'Recla
 
 export default function NCDetail() {
   const { id } = useParams();
-  const { db, update, notify } = useStore();
+  const { db, update, notify, can } = useStore();
   const navTo = useNavigate();
   const nc = db.ncs.find((n) => n.id === id);
   const [view, setView] = useState<NCStage | null>(null);
@@ -22,7 +24,8 @@ export default function NCDetail() {
   const set = (fn: (n: NonConformity) => void) => update((d) => { const n = d.ncs.find((x) => x.id === nc.id); if (n) fn(n); });
   const shown = view ?? nc.stage;
   const cur = stageIndex(nc.stage);
-  const ro = nc.stage === 'encerrada' || stageIndex(shown) < cur; // etapas anteriores ficam só para leitura
+  const canEdit = can('edit', 'ncs', nc);
+  const ro = !canEdit || nc.stage === 'encerrada' || stageIndex(shown) < cur; // etapas anteriores ficam só para leitura
   const proc = db.processes.find((p) => p.id === nc.processId);
   const audit = nc.auditId ? db.audits.find((a) => a.id === nc.auditId) : undefined;
   const bl = blockers(nc);
@@ -64,13 +67,16 @@ export default function NCDetail() {
             </div>
           </div>
           <div className="head-actions">
-            <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar dados</button>
-            {prev && <button className="btn" onClick={() => setModal('back')}><Undo2 />Voltar etapa</button>}
-            {nc.stage === 'encerrada' && <button className="btn" onClick={() => setModal('reopen')}><RotateCcw />Reabrir</button>}
-            <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir não conformidade"><Trash2 />Excluir</button>
+            {canEdit && <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar dados</button>}
+            {canEdit && prev && <button className="btn" onClick={() => setModal('back')}><Undo2 />Voltar etapa</button>}
+            {canEdit && nc.stage === 'encerrada' && <button className="btn" onClick={() => setModal('reopen')}><RotateCcw />Reabrir</button>}
+            <Link className="btn" to={`/imprimir/nc/${nc.id}`} target="_blank"><Printer />RNC em PDF</Link>
+            {can('delete', 'ncs', nc) && <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir não conformidade"><Trash2 />Excluir</button>}
           </div>
         </div>
       </div>
+
+      <ReadOnlyNote show={!canEdit} />
 
       <div className="stepper" role="tablist" aria-label="Etapas do tratamento">
         {STAGES.map((s, i) => {
@@ -143,7 +149,7 @@ export default function NCDetail() {
         </section>
       )}
 
-      {view === null && nc.stage !== 'encerrada' && next && (
+      {view === null && canEdit && nc.stage !== 'encerrada' && next && (
         <section className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
           {bl.length ? (
             <div className="blockers" style={{ flex: '1 1 320px' }}><b>Para avançar para "{next.label}":</b><ul>{bl.map((b) => <li key={b}>{b}</li>)}</ul></div>
@@ -152,6 +158,7 @@ export default function NCDetail() {
         </section>
       )}
       {view !== null && <div><button className="btn" onClick={() => setView(null)}><ArrowLeft />Voltar para a etapa atual</button></div>}
+      <History entity="ncs" id={nc.id} />
       {modal === 'edit' && <NCForm nc={nc} onClose={() => setModal(null)} />}
       {modal === 'back' && prev && (
         <Confirm title={`Voltar para "${prev.label}"?`} confirmLabel="Voltar etapa" onClose={() => setModal(null)} onConfirm={stepBack}>
@@ -190,7 +197,7 @@ function Analysis({ nc, ro, set }: { nc: NonConformity; ro: boolean; set: (fn: (
         <p className="how">Pergunte "por quê?" a partir do problema até chegar a algo que, se corrigido, impede que ele volte. Normalmente de 3 a 5 vezes.</p>
         <div className="whys">
           {[...nc.whys, ...Array(Math.max(0, 5 - nc.whys.length)).fill('')].map((w: string, i) => (
-            <label key={i} className="why"><span>{i + 1}º por quê</span><input className="input" disabled={ro} value={w} onChange={(e) => set((n) => { n.whys[i] = e.target.value; })} placeholder={i === 0 ? 'Por que o problema aconteceu?' : 'E por que isso aconteceu?'} /></label>
+            <label key={i} className="why"><span>{i + 1}º por quê</span><input className="input" disabled={ro} value={w} onChange={(e) => set((n) => { while (n.whys.length < i) n.whys.push(''); n.whys[i] = e.target.value; })} placeholder={i === 0 ? 'Por que o problema aconteceu?' : 'E por que isso aconteceu?'} /></label>
           ))}
         </div>
         <div className="form-grid" style={{ marginTop: 14 }}>

@@ -5,6 +5,8 @@ import { useStore } from '../data/store';
 import type { Process, ProcessType } from '../data/types';
 import { fmtDate, fmtKpi, isOpen, lastValue } from '../data/utils';
 import { Confirm, Empty, KpiPill, LinesField, Modal, SeverityPill, Sparkline, StagePill } from '../components/ui';
+import History from '../components/History';
+import { ReadOnlyNote } from '../components/DemoBar';
 
 const ROWS: { type: ProcessType; label: string }[] = [
   { type: 'gestao', label: 'Processos de gestão' },
@@ -60,14 +62,14 @@ function ProcessForm({ initial, onClose }: { initial?: Process; onClose: () => v
 }
 
 export default function Processes() {
-  const { db } = useStore();
+  const { db, can } = useStore();
   const [creating, setCreating] = useState(false);
   const openBy = (id: string) => db.ncs.filter((n) => n.processId === id && isOpen(n)).length;
   return (
     <div className="page">
       <div className="page-head">
         <div><h1>Mapa de processos</h1><p>Como a Rotalume Indústria transforma o pedido do cliente em produto entregue (ISO 9001:2015, cláusula 4.4). Clique em um processo para ver e editar o SIPOC.</p></div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo processo</button>
+        {can('create', 'processes') && <button className="btn primary" onClick={() => setCreating(true)}><Plus />Novo processo</button>}
       </div>
       <div className="pmap">
         {ROWS.map((r) => (
@@ -92,7 +94,7 @@ export default function Processes() {
 
 export function ProcessDetail() {
   const { id } = useParams();
-  const { db, update, notify } = useStore();
+  const { db, update, notify, can } = useStore();
   const nav = useNavigate();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -118,10 +120,11 @@ export function ProcessDetail() {
           <div className="meta-row" style={{ marginTop: 8 }}><span>Dono do processo <b>{p.owner}</b></span><span>Tipo <b>{TYPE_LABEL[p.type]}</b></span></div>
         </div>
         <div className="head-actions">
-          <button className="btn" onClick={() => setEditing(true)}><Pencil />Editar processo e SIPOC</button>
-          <button className="btn ghost danger" onClick={() => setDeleting(true)} aria-label="Excluir processo"><Trash2 />Excluir</button>
+          {can('edit', 'processes', p) && <button className="btn" onClick={() => setEditing(true)}><Pencil />Editar processo e SIPOC</button>}
+          {can('delete', 'processes', p) && <button className="btn ghost danger" onClick={() => setDeleting(true)} aria-label="Excluir processo"><Trash2 />Excluir</button>}
         </div></div>
       </div>
+      <ReadOnlyNote show={!can('edit', 'processes', p)} />
       <section className="card">
         <h2>SIPOC</h2>
         <p className="how">Fornecedores, entradas, etapas do processo, saídas e clientes.</p>
@@ -149,6 +152,7 @@ export function ProcessDetail() {
           {audits.length ? <ul className="list">{audits.map((a) => <li key={a.id}><Link to={`/auditorias/${a.id}`}><b>{a.code}</b><div className="s">{fmtDate(a.date)} · {a.auditor}</div></Link><span className={`pill dot ${a.done ? 'ok' : 'info'}`}>{a.done ? 'Realizada' : 'Programada'}</span></li>)}</ul> : <Empty>Nenhuma auditoria neste processo.</Empty>}
         </section>
       </div>
+      <History entity="processes" id={p.id} />
       {editing && <ProcessForm initial={p} onClose={() => setEditing(false)} />}
       {deleting && (
         <Confirm title={`Excluir ${p.code} · ${p.name}?`} blocked={links > 0} onClose={() => setDeleting(false)} onConfirm={remove}>

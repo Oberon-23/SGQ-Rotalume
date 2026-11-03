@@ -1,48 +1,56 @@
-/* Estado global do SGQ, salvo no navegador (localStorage). */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { DB } from './types';
-import { DB_VERSION, seed } from './seed';
+/*
+ * Estado global do SGQ.
+ *
+ * Fluxo de toda alteração: tela chama `update` → o store aplica a mudança numa cópia →
+ * `diffDB` descobre o que mudou → a trilha de auditoria ganha as linhas → `source.persist`
+ * grava. As telas não sabem onde os dados ficam.
+ */
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { DB, Entity } from './types';
+import { seed } from './seed';
+import { appendLog, diffDB, type Change } from './changes';
+import { migrate, source } from './source';
+import { can, USERS, type Act, type User } from './access';
 
-const KEY = 'sgq-rotalume';
-
-function load(): DB {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const db = JSON.parse(raw) as DB;
-      if (db.version === DB_VERSION && Array.isArray(db.ncs)) return db;
-    }
-  } catch { /* armazenamento indisponível ou corrompido: usa os exemplos */ }
-  return seed();
-}
+const USER_KEY = 'sgq-user';
 
 interface Store {
   db: DB;
-  /** Altera uma cópia do banco e salva. */
+  /** Altera uma cópia do banco, registra na trilha e salva. */
   update: (fn: (draft: DB) => void) => void;
   reset: () => void;
   replace: (db: DB) => void;
   saved: boolean;
+  sourceName: string;
   toast: { id: number; msg: string } | null;
   notify: (msg: string) => void;
+  user: User;
+  setUser: (id: string) => void;
+  /** Atalho para as regras de permissão com o usuário atual. */
+  can: (act: Act, entity: Entity | 'data', rec?: object) => boolean;
 }
 
 const Ctx = createContext<Store | null>(null);
 
-/** Confere se um arquivo importado tem o formato do banco. */
-export function isDB(x: unknown): x is DB {
-  const d = x as DB;
-  return !!d && typeof d === 'object' && d.version === DB_VERSION &&
-    ['processes', 'ncs', 'audits', 'docs', 'kpis'].every((k) => Array.isArray((d as unknown as Record<string, unknown>)[k]));
+/** Confere (e atualiza, se for de versão anterior) um arquivo de backup importado. */
+export const importDB = (x: unknown) => migrate(x);
+
+function loadUser(): User {
+  try { const id = localStorage.getItem(USER_KEY); return USERS.find((u) => u.id === id) ?? USERS[0]; } catch { return USERS[0]; }
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<DB>(load);
+  const [db, setDb] = useState<DB>(() => source.load() ?? seed());
   const [saved, setSaved] = useState(true);
   const [toast, setToast] = useState<Store['toast']>(null);
+  const [user, setUserState] = useState<User>(loadUser);
+  const userRef = useRef(user);
+  userRef.current = user;
+  const pending = useRef<Change[] | null>(null);
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(db)); setSaved(true); } catch { setSaved(false); }
+    try { source.persist(db, pending.current ?? []); setSaved(true); } catch { setSaved(false); }
+    pending.current = null;
   }, [db]);
 
   useEffect(() => {
@@ -52,13 +60,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const update = useCallback((fn: (draft: DB) => void) => {
-    setDb((cur) => { const next = structuredClone(cur); fn(next); return next; });
+    setDb((cur) => {
+      const next = structuredClone(cur);
+      fn(next);
+      const changes = diffDB(cur, next);
+      if (!changes.length) return cur;
+      next.log = appendLog(cur.log, changes, userRef.current, next);
+      pending.current = changes;
+      return next;
+    });
   }, []);
-  const reset = useCallback(() => setDb(seed()), []);
+  const reset = useCallback(() => { source.clear(); setDb(seed()); }, []);
   const replace = useCallback((d: DB) => setDb(d), []);
   const notify = useCallback((msg: string) => setToast({ id: Date.now(), msg }), []);
+  const setUser = useCallback((id: string) => {
+    const u = USERS.find((x) => x.id === id) ?? USERS[0];
+    setUserState(u);
+    try { localStorage.setItem(USER_KEY, u.id); } catch { /* sem armazenamento */ }
+  }, []);
+  const canFn = useCallback((act: Act, entity: Entity | 'data', rec?: object) => can(user, db, act, entity, rec), [user, db]);
 
-  const value = useMemo(() => ({ db, update, reset, replace, saved, toast, notify }), [db, update, reset, replace, saved, toast, notify]);
+  const value = useMemo(() => ({ db, update, reset, replace, saved, sourceName: source.name, toast, notify, user, setUser, can: canFn }),
+    [db, update, reset, replace, saved, toast, notify, user, setUser, canFn]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

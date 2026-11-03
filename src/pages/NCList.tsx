@@ -59,7 +59,7 @@ export function NCForm({ onClose, nc }: { onClose: () => void; nc?: NonConformit
 }
 
 export default function NCList() {
-  const { db } = useStore();
+  const { db, can } = useStore();
   const nav = useNavigate();
   const [q, setQ] = useState('');
   const [stage, setStage] = useState('abertas');
@@ -78,7 +78,7 @@ export default function NCList() {
     <div className="page">
       <div className="page-head">
         <div><h1>Não conformidades</h1><p>Registro, contenção, análise de causa, plano de ação e verificação de eficácia (ISO 9001:2015, cláusula 10.2).</p></div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus />Registrar não conformidade</button>
+        {can('create', 'ncs') && <button className="btn primary" onClick={() => setCreating(true)}><Plus />Registrar não conformidade</button>}
       </div>
       <div className="toolbar">
         <input className="input search" type="search" placeholder="Buscar por código, título ou responsável" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar" />

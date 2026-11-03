@@ -105,6 +105,59 @@ export interface KPI {
   values: KPIValue[];
 }
 
+/* ---------- riscos e oportunidades (ISO 9001, 6.1) ---------- */
+export type RiskKind = 'risco' | 'oportunidade';
+export type RiskStatus = 'aberto' | 'tratamento' | 'controlado';
+export interface Risk {
+  id: string;
+  code: string;
+  kind: RiskKind;
+  processId: string;
+  title: string;
+  cause: string;
+  consequence: string;   // para oportunidade: o benefício esperado
+  probability: number;   // 1 a 5
+  impact: number;        // 1 a 5
+  treatment: string;     // Mitigar, Evitar, Transferir, Aceitar | Explorar, Ampliar, Compartilhar
+  action: string;
+  owner: string;
+  reviewAt: string;
+  status: RiskStatus;
+}
+
+/* ---------- análise crítica pela direção (ISO 9001, 9.3) ---------- */
+export interface ReviewSection { clause: string; title: string; items: string[] }
+export interface ReviewDecision { id: string; text: string; owner: string; due: string; done: boolean }
+export interface Review {
+  id: string;
+  code: string;
+  date: string;
+  from: string;          // período analisado
+  to: string;
+  participants: string;
+  context: string;       // mudanças em questões internas e externas (9.3.2 b)
+  inputs: ReviewSection[]; // entradas montadas a partir dos módulos
+  decisions: ReviewDecision[];
+  conclusion: string;
+  closed: boolean;
+}
+
+/* ---------- usuários de demonstração e trilha de auditoria ---------- */
+export type Role = 'gestor' | 'dono' | 'auditor' | 'leitor';
+export type Entity = 'processes' | 'ncs' | 'audits' | 'docs' | 'kpis' | 'risks' | 'reviews';
+export interface LogField { field: string; from: string; to: string }
+export interface LogEntry {
+  id: string;
+  at: string;            // data e hora ISO
+  user: string;
+  role: Role;
+  entity: Entity;
+  entityId: string;
+  label: string;         // código ou nome do registro, para leitura humana
+  action: 'criou' | 'alterou' | 'excluiu';
+  fields: LogField[];
+}
+
 export interface DB {
   version: number;
   seededAt: string;
@@ -113,4 +166,7 @@ export interface DB {
   audits: Audit[];
   docs: Doc[];
   kpis: KPI[];
+  risks: Risk[];
+  reviews: Review[];
+  log: LogEntry[];
 }

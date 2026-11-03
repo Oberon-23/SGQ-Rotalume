@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { BookOpen, ClipboardCheck, Database, FileText, Gauge, LayoutDashboard, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
+import { BookOpen, ClipboardCheck, Database, FileText, Gauge, LayoutDashboard, Presentation, ShieldAlert, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
+import DemoBar from './DemoBar';
 import { useStore } from '../data/store';
 import { isLate } from '../data/utils';
 import { ThemeToggle, Toast } from './ui';
@@ -14,9 +15,11 @@ export default function Layout() {
     { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
     { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late },
     { to: '/processos', label: 'Processos', icon: Workflow },
+    { to: '/riscos', label: 'Riscos e oportunidades', icon: ShieldAlert },
     { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
     { to: '/documentos', label: 'Documentos', icon: FileText },
     { to: '/indicadores', label: 'Indicadores', icon: Gauge },
+    { to: '/analise-critica', label: 'Análise crítica', icon: Presentation },
     { to: '/dados', label: 'Dados e backup', icon: Database },
     { to: '/sobre', label: 'Sobre o projeto', icon: BookOpen },
   ];
@@ -40,6 +43,7 @@ export default function Layout() {
         </div>
       </aside>
       <div className="main">
+        <DemoBar />
         <Outlet />
         <footer className="foot">Projeto de portfólio de Breno Silva · Rotalume é uma empresa fictícia e todos os dados são simulados.</footer>
       </div>

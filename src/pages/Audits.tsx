@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Pencil, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Check, Pencil, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react';
+import History from '../components/History';
+import { ReadOnlyNote } from '../components/DemoBar';
 import { nextCode, useStore } from '../data/store';
 import { auditChecklist } from '../data/seed';
 import type { Audit, AuditItem, AuditResult } from '../data/types';
@@ -46,7 +48,7 @@ function AuditForm({ initial, onClose }: { initial?: Audit; onClose: () => void 
 }
 
 export default function Audits() {
-  const { db } = useStore();
+  const { db, can } = useStore();
   const nav = useNavigate();
   const [creating, setCreating] = useState(false);
   const pname = (id: string) => db.processes.find((p) => p.id === id)?.name ?? '—';
@@ -58,7 +60,7 @@ export default function Audits() {
     <div className="page">
       <div className="page-head">
         <div><h1>Auditorias internas</h1><p>Programa de auditorias por processo, com checklist dos requisitos da ISO 9001:2015 (cláusula 9.2).</p></div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus />Programar auditoria</button>
+        {can('create', 'audits') && <button className="btn primary" onClick={() => setCreating(true)}><Plus />Programar auditoria</button>}
       </div>
       <div className="tiles">
         <div className="tile"><span className="lab">Realizadas</span><span className="val">{done.length}</span><span className="sub">de {db.audits.length} no programa</span></div>
@@ -91,7 +93,7 @@ export default function Audits() {
 
 export function AuditDetail() {
   const { id } = useParams();
-  const { db, update, notify } = useStore();
+  const { db, update, notify, can } = useStore();
   const nav = useNavigate();
   const [modal, setModal] = useState<'edit' | 'delete' | null>(null);
   const [newItem, setNewItem] = useState({ clause: '', requirement: '' });
@@ -99,6 +101,8 @@ export function AuditDetail() {
   if (!a) return <div className="page"><Link className="crumb" to="/auditorias"><ArrowLeft size={14} />Auditorias</Link><Empty>Auditoria não encontrada.</Empty></div>;
   const p = db.processes.find((y) => y.id === a.processId);
   const x = auditFindings(a);
+  const canEdit = can('edit', 'audits', a);
+  const locked = a.done || !canEdit;
   const remove = () => {
     update((d) => { d.audits = d.audits.filter((y) => y.id !== a.id); d.ncs.forEach((n) => { if (n.auditId === a.id) n.auditId = undefined; }); });
     notify(`${a.code} excluída.`); nav('/auditorias');
@@ -133,13 +137,15 @@ export function AuditDetail() {
             </div>
           </div>
           <div className="head-actions">
-            {!a.done ? <button className="btn primary" disabled={x.pending > 0 || !a.items.length} title={x.pending ? 'Avalie todos os requisitos' : ''} onClick={() => { update((d) => { const y = d.audits.find((z) => z.id === a.id); if (y) { y.done = true; y.date = y.date > today() ? today() : y.date; } }); notify(`${a.code} concluída.`); }}><Check />Concluir auditoria</button>
-              : <button className="btn" onClick={() => update((d) => { const y = d.audits.find((z) => z.id === a.id); if (y) y.done = false; })}>Reabrir para editar</button>}
-            <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar</button>
-            <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir auditoria"><Trash2 />Excluir</button>
+            {canEdit && (!a.done ? <button className="btn primary" disabled={x.pending > 0 || !a.items.length} title={x.pending ? 'Avalie todos os requisitos' : ''} onClick={() => { update((d) => { const y = d.audits.find((z) => z.id === a.id); if (y) { y.done = true; y.date = y.date > today() ? today() : y.date; } }); notify(`${a.code} concluída.`); }}><Check />Concluir auditoria</button>
+              : <button className="btn" onClick={() => update((d) => { const y = d.audits.find((z) => z.id === a.id); if (y) y.done = false; })}>Reabrir para editar</button>)}
+            {canEdit && <button className="btn" onClick={() => setModal('edit')}><Pencil />Editar</button>}
+            <Link className="btn" to={`/imprimir/auditoria/${a.id}`} target="_blank"><Printer />Relatório em PDF</Link>
+            {can('delete', 'audits', a) && <button className="btn ghost danger" onClick={() => setModal('delete')} aria-label="Excluir auditoria"><Trash2 />Excluir</button>}
           </div>
         </div>
       </div>
+      <ReadOnlyNote show={!canEdit} />
       <div className="tiles">
         <div className="tile"><span className="lab">Avaliados</span><span className="val">{a.items.length - x.pending}/{a.items.length}</span><span className="sub">requisitos do checklist</span></div>
         <div className="tile"><span className="lab">Não conformidades</span><span className="val" style={{ color: x.nc ? 'var(--bad)' : undefined }}>{x.nc}</span><span className="sub">{a.items.filter((i) => i.result === 'NC' && i.ncId).length} com tratamento aberto</span></div>
@@ -153,19 +159,19 @@ export function AuditDetail() {
         {a.items.map((i) => (
           <div key={i.id} className="check-row">
             <span className="clause">{i.clause}</span>
-            <span style={{ fontSize: 14 }}>{i.requirement}{!a.done && !i.ncId && <button className="btn small ghost" style={{ marginLeft: 6, padding: '2px 6px', verticalAlign: 'middle' }} onClick={() => removeItem(i.id)} aria-label={`Remover requisito ${i.clause}`} title="Remover requisito"><X /></button>}</span>
+            <span style={{ fontSize: 14 }}>{i.requirement}{!locked && !i.ncId && <button className="btn small ghost" style={{ marginLeft: 6, padding: '2px 6px', verticalAlign: 'middle' }} onClick={() => removeItem(i.id)} aria-label={`Remover requisito ${i.clause}`} title="Remover requisito"><X /></button>}</span>
             <div className="seg res-seg" role="group" aria-label={`Resultado do requisito ${i.clause}`}>
-              {RES.map((r) => <button key={r.v} type="button" className={`r-${r.v}`} title={r.long} aria-label={r.long} aria-pressed={i.result === r.v} disabled={a.done} onClick={() => setItem(i.id, (y) => { y.result = y.result === r.v ? null : r.v; })}>{r.label}</button>)}
+              {RES.map((r) => <button key={r.v} type="button" className={`r-${r.v}`} title={r.long} aria-label={r.long} aria-pressed={i.result === r.v} disabled={locked} onClick={() => setItem(i.id, (y) => { y.result = y.result === r.v ? null : r.v; })}>{r.label}</button>)}
             </div>
             <div className="evid" style={{ display: 'grid', gap: 8 }}>
-              <textarea className="input" style={{ minHeight: 44 }} disabled={a.done} value={i.evidence} onChange={(e) => setItem(i.id, (y) => { y.evidence = e.target.value; })} placeholder="Evidência objetiva: o que foi visto, onde, documento, registro" aria-label={`Evidência do requisito ${i.clause}`} />
+              <textarea className="input" style={{ minHeight: 44 }} disabled={locked} value={i.evidence} onChange={(e) => setItem(i.id, (y) => { y.evidence = e.target.value; })} placeholder="Evidência objetiva: o que foi visto, onde, documento, registro" aria-label={`Evidência do requisito ${i.clause}`} />
               {i.result === 'NC' && (i.ncId
                 ? <Link to={`/nao-conformidades/${i.ncId}`} className="pill dot bad" style={{ justifySelf: 'start', textDecoration: 'none' }}>Tratamento: {db.ncs.find((n) => n.id === i.ncId)?.code ?? 'não encontrado'}</Link>
-                : <button className="btn small" style={{ justifySelf: 'start' }} onClick={() => openNC(i.id)}><TriangleAlert />Abrir não conformidade</button>)}
+                : canEdit ? <button className="btn small" style={{ justifySelf: 'start' }} onClick={() => openNC(i.id)}><TriangleAlert />Abrir não conformidade</button> : <span className="pill dot warn" style={{ justifySelf: 'start' }}>Sem tratamento</span>)}
             </div>
           </div>
         ))}
-        {!a.done && (
+        {!locked && (
           <div className="add-item">
             <label className="field"><span>Cláusula</span><input className="input" value={newItem.clause} onChange={(e) => setNewItem({ ...newItem, clause: e.target.value })} placeholder="8.5.1" /></label>
             <label className="field"><span>Novo requisito</span><input className="input" value={newItem.requirement} onChange={(e) => setNewItem({ ...newItem, requirement: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') addItem(); }} placeholder="O que será verificado" /></label>
@@ -173,6 +179,7 @@ export function AuditDetail() {
           </div>
         )}
       </section>
+      <History entity="audits" id={a.id} />
       {modal === 'edit' && <AuditForm initial={a} onClose={() => setModal(null)} />}
       {modal === 'delete' && (
         <Confirm title={`Excluir ${a.code}?`} onClose={() => setModal(null)} onConfirm={remove}>
