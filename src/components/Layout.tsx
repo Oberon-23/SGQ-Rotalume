@@ -26,18 +26,27 @@ export default function Layout() {
   }, []);
   const late = db.ncs.filter(isLate).length;
   const myLate = user.role === 'leitor' ? 0 : tasksFor(db, user.name).filter((t) => (t.days ?? 1) < 0).length;
-  const links = [
-    { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
-    { to: '/minhas-pendencias', label: 'Minhas pendências', icon: ClipboardList, count: myLate, countTitle: 'pendências vencidas' },
-    { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late, countTitle: 'não conformidades vencidas' },
-    { to: '/processos', label: 'Processos', icon: Workflow },
-    { to: '/riscos', label: 'Riscos e oportunidades', icon: ShieldAlert },
-    { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
-    { to: '/documentos', label: 'Documentos', icon: FileText },
-    { to: '/indicadores', label: 'Indicadores', icon: Gauge },
-    { to: '/analise-critica', label: 'Análise crítica', icon: Presentation },
-    { to: '/dados', label: 'Dados e backup', icon: Database },
-    { to: '/sobre', label: 'Sobre o projeto', icon: BookOpen },
+  type NavItem = { to: string; label: string; icon: typeof Gauge; end?: boolean; count?: number; countTitle?: string };
+  const groups: { label: string; items: NavItem[] }[] = [
+    { label: 'Hoje', items: [
+      { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
+      { to: '/minhas-pendencias', label: 'Minhas pendências', icon: ClipboardList, count: myLate, countTitle: 'pendências vencidas' },
+      { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late, countTitle: 'não conformidades vencidas' },
+    ] },
+    { label: 'Planejamento', items: [
+      { to: '/processos', label: 'Processos', icon: Workflow },
+      { to: '/riscos', label: 'Riscos e oportunidades', icon: ShieldAlert },
+      { to: '/indicadores', label: 'Indicadores', icon: Gauge },
+    ] },
+    { label: 'Verificação', items: [
+      { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
+      { to: '/documentos', label: 'Documentos', icon: FileText },
+      { to: '/analise-critica', label: 'Análise crítica', icon: Presentation },
+    ] },
+    { label: 'Sistema', items: [
+      { to: '/dados', label: 'Dados e backup', icon: Database },
+      { to: '/sobre', label: 'Sobre o projeto', icon: BookOpen },
+    ] },
   ];
   return (
     <div className="app">
@@ -46,11 +55,15 @@ export default function Layout() {
           <NavLink to="/" className="brand"><span className="logo"><ShieldCheck /></span><div><b>SGQ Rotalume</b><small>Indústria · empresa fictícia</small></div></NavLink>
         </div>
         <nav className="nav" aria-label="Módulos">
-          <span className="nav-label">Módulos</span>
-          {links.map(({ to, label, icon: Icon, end, count, countTitle }) => (
-            <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}>
-              <Icon />{label}{count ? <span className="count" title={`${count} ${countTitle}`} aria-label={`${count} ${countTitle}`}>{count}</span> : null}
-            </NavLink>
+          {groups.map((g) => (
+            <div className="nav-group" key={g.label} role="group" aria-label={g.label}>
+              <span className="nav-label">{g.label}</span>
+              {g.items.map(({ to, label, icon: Icon, end, count, countTitle }) => (
+                <NavLink key={to} to={to} end={end} data-tour={to} className={({ isActive }) => (isActive ? 'active' : '')}>
+                  <Icon />{label}{count ? <span className="count" title={`${count} ${countTitle}`} aria-label={`${count} ${countTitle}`}>{count}</span> : null}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="side-foot">
