@@ -21,6 +21,10 @@ export interface DataSource {
   persist(next: DB, changes: Change[]): void;
   /** Apaga tudo (usado ao restaurar os dados de exemplo). */
   clear(): void;
+  /** Fontes remotas: avisam quando terminaram de gravar ou quando deu erro. */
+  onStatus?(fn: (s: { saving: boolean; error?: string }) => void): () => void;
+  /** Fontes remotas: relê do servidor (depois de uma recusa, para a tela não mentir). */
+  resync?(): Promise<DB | null>;
 }
 
 const KEY = 'sgq-rotalume';

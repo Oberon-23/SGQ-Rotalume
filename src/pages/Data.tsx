@@ -2,16 +2,17 @@ import { useRef, useState } from 'react';
 import { Download, FileSpreadsheet, RotateCcw, Upload } from 'lucide-react';
 import { importDB, useStore } from '../data/store';
 import type { DB, Entity } from '../data/types';
-import { ENTITY_LABEL } from '../data/changes';
+import { ENTITIES, ENTITY_LABEL } from '../data/changes';
 import { ROLE_LABEL } from '../data/access';
 import { LogLine, fmtDateTime } from '../components/History';
 import { csv, download } from '../data/csv';
 import { fmtDate, stageLabel, today } from '../data/utils';
 import { Confirm } from '../components/ui';
 import { iqf, iqfClass } from '../data/quality';
+import { seed } from '../data/seed';
 
 export default function Data() {
-  const { db, replace, reset, notify, can, sourceName } = useStore();
+  const { db, replace, reset, update, notify, can, sourceName, mode } = useStore();
   const admin = can('edit', 'data');
   const [fEntity, setFEntity] = useState('');
   const [fUser, setFUser] = useState('');
@@ -86,7 +87,7 @@ export default function Data() {
       <div className="data-grid">
         <section className="card">
           <h2>Backup completo</h2>
-          <p>Arquivo .json com todos os módulos. Serve para restaurar depois neste ou em outro navegador.</p>
+          <p>Arquivo .json com todos os módulos. Serve para restaurar depois{mode === 'banco' ? ' ou levar para outro banco.' : ' neste ou em outro navegador.'}</p>
           <button className="btn primary" onClick={exportJson}><Download />Baixar backup</button>
         </section>
         <section className="card">
@@ -127,13 +128,13 @@ export default function Data() {
         {logRows.length > limit && <button className="btn small ghost" style={{ marginTop: 8 }} onClick={() => setLimit(limit + 50)}>Ver mais ({logRows.length - limit} restantes)</button>}
       </section>
       {pending && (
-        <Confirm title="Restaurar este backup?" confirmLabel="Substituir dados" onClose={() => setPending(null)} onConfirm={() => { replace(pending); setPending(null); notify('Backup restaurado.'); }}>
+        <Confirm title="Restaurar este backup?" confirmLabel="Substituir dados" onClose={() => setPending(null)} onConfirm={() => { if (mode === 'banco') update((d) => { ENTITIES.forEach((e) => { (d[e] as unknown) = pending[e]; }); }); else replace(pending); setPending(null); notify('Backup restaurado.'); }}>
           <p>O arquivo tem {pending.processes.length} processos, {pending.ncs.length} não conformidades, {pending.audits.length} auditorias, {pending.docs.length} documentos e {pending.kpis.length} indicadores{pending.seededAt ? `, com base criada em ${fmtDate(pending.seededAt)}` : ''}.</p>
           <p>Os dados atuais deste navegador serão substituídos. Se quiser guardá-los, baixe um backup antes.</p>
         </Confirm>
       )}
       {resetting && (
-        <Confirm title="Restaurar dados de exemplo?" confirmLabel="Restaurar" onClose={() => setResetting(false)} onConfirm={() => { reset(); setResetting(false); notify('Dados de exemplo restaurados.'); }}>
+        <Confirm title="Restaurar dados de exemplo?" confirmLabel="Restaurar" onClose={() => setResetting(false)} onConfirm={() => { if (mode === 'banco') { const s0 = seed(); update((d) => { ENTITIES.forEach((e) => { (d[e] as unknown) = s0[e]; }); }); } else reset(); setResetting(false); notify('Dados de exemplo restaurados.'); }}>
           <p>Tudo o que foi criado ou alterado neste navegador será perdido.</p>
         </Confirm>
       )}

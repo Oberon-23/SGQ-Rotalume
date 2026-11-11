@@ -9,7 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { DB, Entity } from './types';
 import { seed } from './seed';
 import { appendLog, diffDB, type Change } from './changes';
-import { migrate, source } from './source';
+import { migrate, source as localSource, type DataSource } from './source';
 import { can, USERS, type Act, type User } from './access';
 
 const USER_KEY = 'sgq-user';
@@ -28,6 +28,23 @@ interface Store {
   setUser: (id: string) => void;
   /** Atalho para as regras de permissão com o usuário atual. */
   can: (act: Act, entity: Entity | 'data', rec?: object) => boolean;
+  /** Aplica uma mudança que veio de fora (outra pessoa, pelo banco): não entra na trilha nem é regravada. */
+  patch: (fn: (draft: DB) => void) => void;
+  /** 'demo': dados no navegador, troca de perfil livre. 'banco': login real no Supabase. */
+  mode: 'demo' | 'banco';
+  /** Só no modo banco: sair da conta. */
+  signOut?: () => void;
+  /** Só no modo banco: id da empresa (pasta dos anexos). */
+  empresaId?: string;
+}
+
+export interface StoreOptions {
+  initial?: DB;
+  source?: DataSource;
+  /** Pessoa logada (modo banco). Sem ela, vale a troca de perfil da demonstração. */
+  account?: User;
+  signOut?: () => void;
+  empresaId?: string;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -39,19 +56,26 @@ function loadUser(): User {
   try { const id = localStorage.getItem(USER_KEY); return USERS.find((u) => u.id === id) ?? USERS[0]; } catch { return USERS[0]; }
 }
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<DB>(() => source.load() ?? seed());
+export function StoreProvider({ children, initial, source = localSource, account, signOut, empresaId }: { children: ReactNode } & StoreOptions) {
+  const [db, setDb] = useState<DB>(() => initial ?? source.load() ?? seed());
   const [saved, setSaved] = useState(true);
   const [toast, setToast] = useState<Store['toast']>(null);
-  const [user, setUserState] = useState<User>(loadUser);
+  const [userState, setUserState] = useState<User>(loadUser);
+  const user = account ?? userState;
   const userRef = useRef(user);
   userRef.current = user;
   const pending = useRef<Change[] | null>(null);
 
   useEffect(() => {
-    try { source.persist(db, pending.current ?? []); setSaved(true); } catch { setSaved(false); }
+    try { source.persist(db, pending.current ?? []); if (!source.onStatus) setSaved(true); } catch { setSaved(false); }
     pending.current = null;
-  }, [db]);
+  }, [db, source]);
+
+  // fonte remota: avisa quando terminou de gravar ou quando o banco recusou
+  useEffect(() => source.onStatus?.((s) => {
+    setSaved(!s.saving && !s.error);
+    if (s.error) { setToast({ id: Date.now(), msg: s.error }); void source.resync?.().then((d) => { if (d) setDb(d); }); }
+  }), [source]);
 
   useEffect(() => {
     if (!toast) return;
@@ -70,7 +94,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
-  const reset = useCallback(() => { source.clear(); setDb(seed()); }, []);
+  const reset = useCallback(() => { source.clear(); setDb(seed()); }, [source]);
+  const patch = useCallback((fn: (draft: DB) => void) => setDb((cur) => { const next = structuredClone(cur); fn(next); return next; }), []);
   const replace = useCallback((d: DB) => setDb(d), []);
   const notify = useCallback((msg: string) => setToast({ id: Date.now(), msg }), []);
   const setUser = useCallback((id: string) => {
@@ -80,8 +105,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const canFn = useCallback((act: Act, entity: Entity | 'data', rec?: object) => can(user, db, act, entity, rec), [user, db]);
 
-  const value = useMemo(() => ({ db, update, reset, replace, saved, sourceName: source.name, toast, notify, user, setUser, can: canFn }),
-    [db, update, reset, replace, saved, toast, notify, user, setUser, canFn]);
+  const mode: Store['mode'] = account ? 'banco' : 'demo';
+  const value = useMemo(() => ({ db, update, reset, replace, saved, sourceName: source.name, toast, notify, user, setUser, can: canFn, patch, mode, signOut, empresaId }),
+    [db, update, reset, replace, saved, source, toast, notify, user, setUser, canFn, patch, mode, signOut, empresaId]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

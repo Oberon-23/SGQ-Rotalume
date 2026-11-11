@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, FileText, ShieldAlert, TriangleAlert, X } from 'lucide-react';
+import { useStore } from '../data/store';
 
 export const TOUR_KEY = 'sgq-tour';
 export const tourSeen = () => { try { return localStorage.getItem(TOUR_KEY) === '1'; } catch { return true; } };
@@ -30,7 +31,8 @@ export default function Tour({ onClose }: { onClose: () => void }) {
     <li><Link to={to} onClick={close}>{icon}<span>{children}</span><ArrowRight size={15} /></Link></li>
   );
 
-  const steps: Step[] = [
+  const { mode } = useStore();
+  const all: Step[] = [
     {
       title: 'Bem-vindo ao SGQ Rotalume',
       go: '/',
@@ -145,6 +147,8 @@ export default function Tour({ onClose }: { onClose: () => void }) {
     },
   ];
 
+  // com conta, o perfil vem do login: o passo de trocar de perfil não se aplica
+  const steps = mode === 'banco' ? all.filter((x) => x.target !== '.demo-user') : all;
   const step = steps[i];
   const last = i === steps.length - 1;
 

@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { BookOpen, ClipboardCheck, ClipboardList, Database, FileText, Gauge, GraduationCap, LayoutDashboard, MessageSquareWarning, Presentation, ShieldAlert, ShieldCheck, SquareKanban, Target, TriangleAlert, Truck, Workflow } from 'lucide-react';
+import { BookOpen, ClipboardCheck, ClipboardList, Database, FileText, Gauge, GraduationCap, LayoutDashboard, MessageSquareWarning, Presentation, ShieldAlert, ShieldCheck, SquareKanban, Target, TriangleAlert, Truck, Users, Workflow } from 'lucide-react';
 import { complaintLate } from '../data/quality';
 import TopBar from './DemoBar';
 import SearchPalette from './Search';
@@ -11,7 +11,7 @@ import { isLate } from '../data/utils';
 import { ThemeToggle, Toast } from './ui';
 
 export default function Layout() {
-  const { db, toast, user } = useStore();
+  const { db, toast, user, mode } = useStore();
   const { pathname } = useLocation();
   const [searching, setSearching] = useState(false);
   const [touring, setTouring] = useState(() => !tourSeen());
@@ -53,6 +53,7 @@ export default function Layout() {
       { to: '/analise-critica', label: 'Análise crítica', icon: Presentation },
     ] },
     { label: 'Sistema', items: [
+      ...(mode === 'banco' ? [{ to: '/pessoas', label: 'Pessoas e acesso', icon: Users }] : []),
       { to: '/dados', label: 'Dados e backup', icon: Database },
       { to: '/sobre', label: 'Sobre o projeto', icon: BookOpen },
     ] },
@@ -77,7 +78,7 @@ export default function Layout() {
         </nav>
         <div className="side-foot">
           <ThemeToggle />
-          <span className="note">Os dados ficam salvos neste navegador. Faça backup em <NavLink to="/dados">Dados e backup</NavLink>.</span>
+          <span className="note">{mode === 'banco' ? <>Dados no banco da empresa, compartilhados com a equipe.</> : <>Os dados ficam salvos neste navegador. Faça backup em <NavLink to="/dados">Dados e backup</NavLink>.</>}</span>
         </div>
       </aside>
       <div className="main">

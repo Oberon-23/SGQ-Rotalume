@@ -1,12 +1,37 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../data/store';
+import { seed } from '../data/seed';
+import { ENTITIES } from '../data/changes';
 import { auditFindings, daysBetween, docDueSoon, docOverdue, fmtDate, fmtKpi, isLate, isOpen, kpiOk, lastValue, lateActions, STAGES, today } from '../data/utils';
 import { Headline, KpiPill, SeverityPill, Sparkline, StagePill } from '../components/ui';
 import { tasksFor } from '../data/pending';
 import { TaskRow } from './MyTasks';
 import { STEP_LABEL, complaintLate, evalLate, iqfClass, lastIqf, supplierAlert } from '../data/quality';
 
+/** Banco da empresa ainda vazio: a gestora carrega o exemplo da Rotalume com um clique. */
+function EmptyBank() {
+  const { user, update, notify } = useStore();
+  const load = () => { update((d) => { const s = seed(); ENTITIES.forEach((e) => { (d[e] as unknown) = s[e]; }); }); notify('Dados de exemplo enviados para o banco.'); };
+  return (
+    <div className="page">
+      <div className="page-head"><div><h1>Banco de dados conectado</h1><p>A empresa ainda não tem nenhum registro.</p></div></div>
+      <section className="card prose">
+        {user.role === 'gestor' ? <>
+          <p>Você pode começar do zero, cadastrando processos e não conformidades, ou carregar o exemplo da Rotalume (processos, NCs, riscos, documentos, fornecedores e o resto) para ver tudo funcionando com dados reais no banco.</p>
+          <div><button className="btn primary" onClick={load}>Carregar dados de exemplo</button></div>
+        </> : <p>A gestão da qualidade ainda não cadastrou nada. Assim que houver registros, eles aparecem aqui.</p>}
+      </section>
+    </div>
+  );
+}
+
 export default function Dashboard() {
+  const { db, mode } = useStore();
+  if (mode === 'banco' && ENTITIES.every((e) => !db[e].length)) return <EmptyBank />;
+  return <DashboardView />;
+}
+
+function DashboardView() {
   const { db, user } = useStore();
   const T = today();
   const mine = user.role === 'leitor' ? [] : tasksFor(db, user.name);

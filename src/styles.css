@@ -578,3 +578,14 @@ td.sel input, th.sel input { width: 17px; height: 17px; accent-color: var(--acce
 .obj-nums b { white-space: nowrap; } @media (max-width: 700px) { .obj-nums b { font-size: 15px; } }
 .cmatrix td.cm.warn { font-size: 18px; }
 @media (max-width: 1280px) { .demo-help { display: none; } }
+/* modo banco */
+.demo-tag.live { display: inline-flex; gap: 5px; align-items: center; background: var(--ok-bg); color: var(--ok); }
+.who-am-i { display: inline-flex; gap: 8px; align-items: center; min-width: 0; }
+.who-am-i b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 900px) { .who-am-i .muted { display: none; } }
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); }
+.auth-card { width: min(420px, 100%); display: grid; gap: 14px; }
+.auth-card .brand { padding: 0; }
+.auth-card form { display: grid; gap: 12px; }
+.auth-note { font-size: 13px; color: var(--muted); margin: 0; }
+.splash { min-height: 100vh; display: grid; place-items: center; color: var(--muted); background: var(--bg); }

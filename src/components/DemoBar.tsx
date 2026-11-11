@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, CircleHelp, Search, UserRound } from 'lucide-react';
+import { Bell, CircleHelp, Cloud, CloudOff, LogIn, LogOut, Search, UserRound } from 'lucide-react';
+import { cloudConfigured } from '../data/cloud';
 import { useStore } from '../data/store';
 import { ROLE_HELP, ROLE_LABEL, USERS } from '../data/access';
 import { dueText, notifications, tasksFor } from '../data/pending';
@@ -49,7 +50,19 @@ function NotificationBell() {
 
 /** Barra do topo: perfil de demonstração, busca, notificações e ajuda. */
 export default function TopBar({ onSearch, onHelp }: { onSearch: () => void; onHelp: () => void }) {
-  const { user, setUser, notify } = useStore();
+  const { user, setUser, notify, mode, signOut, saved } = useStore();
+  if (mode === 'banco') return (
+    <div className="demo-bar">
+      <span className="demo-tag live" title="Dados no banco (Supabase), compartilhados com a equipe">{saved ? <Cloud size={14} /> : <CloudOff size={14} />}{saved ? 'Banco' : 'Salvando…'}</span>
+      <span className="who-am-i"><UserRound size={16} aria-hidden="true" /><b>{user.name}</b><span className="muted">{ROLE_LABEL[user.role]}</span></span>
+      <div className="top-tools">
+        <button className="btn ghost search-btn" onClick={onSearch} aria-label="Buscar (Ctrl+K)"><Search /><span className="lbl">Buscar</span><kbd>Ctrl K</kbd></button>
+        <NotificationBell />
+        <button className="btn ghost icon" onClick={onHelp} aria-label="Apresentação do sistema" title="Apresentação do sistema"><CircleHelp /></button>
+        <button className="btn ghost icon" onClick={signOut} aria-label="Sair da conta" title="Sair da conta"><LogOut /></button>
+      </div>
+    </div>
+  );
   return (
     <div className="demo-bar">
       <span className="demo-tag" title="Os dados são fictícios e ficam salvos só neste navegador">Demo</span>
@@ -65,6 +78,7 @@ export default function TopBar({ onSearch, onHelp }: { onSearch: () => void; onH
         <button className="btn ghost search-btn" onClick={onSearch} aria-label="Buscar (Ctrl+K)"><Search /><span className="lbl">Buscar</span><kbd>Ctrl K</kbd></button>
         <NotificationBell />
         <button className="btn ghost icon" onClick={onHelp} aria-label="Apresentação do sistema" title="Apresentação do sistema"><CircleHelp /></button>
+        {cloudConfigured && <Link className="btn small" to="/entrar"><LogIn />Entrar</Link>}
       </div>
     </div>
   );
@@ -72,7 +86,7 @@ export default function TopBar({ onSearch, onHelp }: { onSearch: () => void; onH
 
 /** Aviso exibido no topo de um registro quando o perfil atual só pode ler. */
 export function ReadOnlyNote({ show }: { show: boolean }) {
-  const { user } = useStore();
+  const { user, mode } = useStore();
   if (!show) return null;
-  return <div className="ro-note" role="note">Somente leitura para <b>{user.name}</b> ({ROLE_LABEL[user.role].toLowerCase()}). Troque de perfil no topo da página para editar.</div>;
+  return <div className="ro-note" role="note">Somente leitura para <b>{user.name}</b> ({ROLE_LABEL[user.role].toLowerCase()}). {mode === 'banco' ? 'Peça à gestão da qualidade para mudar seu papel em Pessoas e acesso.' : 'Troque de perfil no topo da página para editar.'}</div>;
 }

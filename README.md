@@ -130,17 +130,23 @@ src/
 | Etapa | Itens |
 |---|---|
 | Feito | 12 módulos ISO, quadro Kanban, aprovação de documentos, anexos de evidência, tour guiado, CRUD completo, perfis, trilha de auditoria, relatórios PDF, pendências por pessoa, notificações, busca geral, listas com lote, backup, testes e CI |
-| Próximo | Banco Postgres (Supabase), login, empresas separadas, regras de acesso no banco |
+| Feito | Banco Postgres (Supabase) opcional: login, papéis por pessoa, empresas separadas, regras de acesso no banco (RLS) testadas, tempo real, anexos no Storage, histórico gravado pelo banco ([como ligar](docs/supabase.md)) |
 | Depois | Anexos no armazenamento do banco, e-mails de prazo (a regra já existe em `pending.ts`), calibração de instrumentos, BPMN no mapa de processos |
 | Produto | Adequação à LGPD, planos de assinatura, importação de planilhas existentes |
+
+## Demonstração ou banco de verdade
+
+Sem login, tudo roda no navegador e dá para trocar de perfil para testar as permissões. Com o Supabase configurado, aparece o botão **Entrar**: os dados vão para um Postgres compartilhado pela equipe, o perfil vem do login e as permissões passam a ser garantidas pelo próprio banco. O passo a passo está em [docs/supabase.md](docs/supabase.md).
 
 ## Stack e qualidade
 
 - React 19 + TypeScript + Vite, React Router, lucide-react
+- Supabase (Postgres, Auth, Realtime, Storage), carregado só para quem entra com conta
 - Gráficos e matriz de risco em SVG/CSS próprios, sem biblioteca
 - Tema claro (creme), escuro e automático
 - **Vitest**: 46 testes das regras de negócio (PDCA, matriz de risco, IQF, aprovação, Kanban, trilha, permissões, migração, CSV), com cobertura mínima obrigatória (hoje 97% das linhas)
 - **Playwright**: 162 testes no navegador, no computador e no celular: todas as telas abrem sem erro e sem rolagem lateral, nenhum link interno quebrado, cadastros de cada módulo, aprovação de documento com três pessoas, Kanban, permissões, anexos, backup e importação, migração de dados antigos e busca
+- **Postgres**: 20 testes das regras de acesso do banco (RLS) rodando num Postgres de verdade no CI: separação entre empresas, o que cada papel pode fazer, trilha que ninguém apaga, anexos por empresa
 - **axe-core**: acessibilidade (WCAG 2.1 AA) em todas as páginas, no tema claro e no escuro
 - **Segurança**: política de conteúdo (CSP) e cabeçalhos de segurança na Vercel, aplicados também nos testes; cache longo para os arquivos com hash
 - **Performance**: Lighthouse 96 a 98 no celular, páginas carregadas sob demanda e bibliotecas em pacote separado
@@ -153,7 +159,8 @@ src/
 npm install
 npm run dev      # desenvolvimento
 npm test         # testes das regras
-npm run e2e      # testes no navegador e acessibilidade (depois do build)
+npm run build:test && npm run e2e   # testes no navegador e acessibilidade
+npm run test:db  # regras de acesso do banco (precisa de um Postgres: DATABASE_URL)
 npm run build    # build de produção em dist/
 ```
 

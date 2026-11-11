@@ -28,7 +28,7 @@ export default function About() {
           <p>Todos os módulos permitem <b>criar, editar e excluir</b>: processos e SIPOC, não conformidades (inclusive voltar etapa e reabrir), auditorias e checklist, documentos, indicadores e resultados.</p>
           <p>Em <Link to="/dados">Dados e backup</Link> você baixa um backup .json para levar a outro computador, restaura um backup, exporta planilhas CSV para Excel ou Power BI e volta aos dados de exemplo.</p>
           <p>As datas dos exemplos são calculadas a partir de hoje, então sempre há itens vencidos, a vencer e auditorias programadas.</p>
-          <p>As telas não acessam o armazenamento diretamente: tudo passa por uma camada de dados que calcula o que mudou. Para levar a um banco real (por exemplo, Postgres no Supabase), troca-se só essa camada.</p>
+          <p>As telas não acessam o armazenamento diretamente: tudo passa por uma camada de dados que calcula o que mudou. Por isso o mesmo sistema roda em dois modos: demonstração, com os dados no navegador, e com conta, num Postgres do Supabase em que as permissões são garantidas pelo próprio banco (Row Level Security) e as mudanças da equipe aparecem em tempo real.</p>
           <p><b>Feito com:</b> React, TypeScript e Vite, com testes automatizados (Vitest) rodando no GitHub Actions. Publicado na Vercel.</p>
         </div></section>
         <section className="card s12"><h2>Requisitos da ISO 9001:2015 cobertos</h2>

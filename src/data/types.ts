@@ -60,7 +60,8 @@ export interface NonConformity {
 }
 
 /** Arquivo de evidência anexado a um registro (guardado no navegador como data URL). */
-export interface Attachment { id: string; name: string; type: string; size: number; data: string; at: string; user: string }
+/** `data` guarda o arquivo no modo demonstração; no banco, o arquivo fica no Storage e `path` diz onde. */
+export interface Attachment { id: string; name: string; type: string; size: number; data: string; path?: string; at: string; user: string }
 
 export type AuditResult = 'C' | 'NC' | 'OBS' | 'OM' | null;
 export interface AuditItem {
