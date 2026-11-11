@@ -128,7 +128,7 @@ export default function NCList() {
           </div>
         )}
         {rows.length ? (<>
-          <div className="tscroll" style={{ border: 0 }}>
+          <div className="tscroll" tabIndex={0} style={{ border: 0 }}>
             <table>
               <thead><tr>
                 <th className="sel"><input type="checkbox" checked={pageAll} onChange={togglePage} aria-label="Selecionar todas desta página" /></th>

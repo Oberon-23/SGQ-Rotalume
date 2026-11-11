@@ -61,6 +61,10 @@ export default function Data() {
         <div className="tile"><span className="lab">Indicadores</span><span className="val">{db.kpis.length}</span></div>
         <div className="tile"><span className="lab">Riscos e oportunidades</span><span className="val">{db.risks.length}</span></div>
         <div className="tile"><span className="lab">Análises críticas</span><span className="val">{db.reviews.length}</span></div>
+        <div className="tile"><span className="lab">Reclamações</span><span className="val">{db.complaints.length}</span></div>
+        <div className="tile"><span className="lab">Fornecedores</span><span className="val">{db.suppliers.length}</span></div>
+        <div className="tile"><span className="lab">Treinamentos</span><span className="val">{db.trainings.length}</span></div>
+        <div className="tile"><span className="lab">Objetivos</span><span className="val">{db.objectives.length}</span></div>
         <div className="tile"><span className="lab">Alterações registradas</span><span className="val">{db.log.length}</span></div>
       </div>
       <div className="data-grid">

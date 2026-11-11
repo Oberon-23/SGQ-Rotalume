@@ -32,7 +32,7 @@ export default function About() {
           <p><b>Feito com:</b> React, TypeScript e Vite, com testes automatizados (Vitest) rodando no GitHub Actions. Publicado na Vercel.</p>
         </div></section>
         <section className="card s12"><h2>Requisitos da ISO 9001:2015 cobertos</h2>
-          <div className="tscroll" style={{ marginTop: 12 }}><table>
+          <div className="tscroll" tabIndex={0} style={{ marginTop: 12 }}><table>
             <thead><tr><th>Cláusula</th><th>Requisito</th><th>Módulo</th></tr></thead>
             <tbody>{MAP.map(([c, r, m, to]) => <tr key={c}><td className="mono">{c}</td><td>{r}</td><td><Link to={to}>{m}</Link></td></tr>)}</tbody>
           </table></div>

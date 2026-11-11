@@ -5,8 +5,9 @@
  */
 import type { DB } from './types';
 import { daysBetween, lastMonths, monthLabel, stageLabel, today } from './utils';
+import { COMPLAINT_LABEL, STEP_LABEL, complaintOpen, stepOwner, trainingState } from './quality';
 
-export type TaskKind = 'nc' | 'acao' | 'documento' | 'auditoria' | 'indicador' | 'risco' | 'decisao';
+export type TaskKind = 'nc' | 'acao' | 'documento' | 'auditoria' | 'indicador' | 'risco' | 'decisao' | 'reclamacao' | 'treinamento' | 'aprovacao' | 'fornecedor';
 
 export interface Task {
   id: string;
@@ -20,6 +21,7 @@ export interface Task {
 
 export const KIND_LABEL: Record<TaskKind, string> = {
   nc: 'Não conformidade', acao: 'Ação 5W2H', documento: 'Documento', auditoria: 'Auditoria', indicador: 'Indicador', risco: 'Risco', decisao: 'Decisão da direção',
+  reclamacao: 'Reclamação', treinamento: 'Treinamento', aprovacao: 'Aprovação de documento', fornecedor: 'Fornecedor',
 };
 
 /** Janela para um prazo contar como "chegando" nas notificações. */
@@ -36,7 +38,10 @@ export function tasksFor(db: DB, name: string): Task[] {
       add({ id: `acao-${a.id}`, kind: 'acao', title: a.what || 'Ação sem descrição', detail: `Plano de ação da ${n.code}`, path: `/nao-conformidades/${n.id}`, due: a.when }));
   });
 
-  db.docs.filter((d) => d.owner === name && d.status !== 'obsoleto').forEach((d) => {
+  db.docs.filter((d) => d.approval && stepOwner(d) === name).forEach((d) =>
+    add({ id: `apr-${d.id}`, kind: 'aprovacao', title: `${d.code} · ${d.title}`, detail: d.approval!.step === 'elaboracao' ? 'Concluir a elaboração e enviar para revisão' : `${STEP_LABEL[d.approval!.step]}: revisão ${d.version + 1}`, path: `/documentos/${d.id}` }));
+
+  db.docs.filter((d) => d.owner === name && d.status !== 'obsoleto' && !d.approval).forEach((d) => {
     const days = daysBetween(T, d.nextReview);
     if (days <= 30 || d.status === 'revisao') add({ id: `doc-${d.id}`, kind: 'documento', title: `${d.code} · ${d.title}`, detail: d.status === 'revisao' ? 'Em revisão: publicar a nova revisão' : 'Revisão periódica', path: `/documentos/${d.id}`, due: d.nextReview });
   });
@@ -55,6 +60,15 @@ export function tasksFor(db: DB, name: string): Task[] {
 
   db.reviews.forEach((rv) => rv.decisions.filter((d) => !d.done && d.owner === name).forEach((d) =>
     add({ id: `dec-${rv.id}-${d.id}`, kind: 'decisao', title: d.text || 'Decisão sem descrição', detail: `Análise crítica ${rv.code}`, path: `/analise-critica/${rv.id}`, due: d.due })));
+
+  db.complaints.filter((c) => c.owner === name && complaintOpen(c)).forEach((c) =>
+    add({ id: `rc-${c.id}`, kind: 'reclamacao', title: `${c.code} · ${c.customer}`, detail: `${COMPLAINT_LABEL[c.status][0]}: responder ao cliente`, path: `/reclamacoes/${c.id}`, due: c.dueAt }));
+
+  db.trainings.filter((t) => t.owner === name && trainingState(t, T) === 'avaliar').forEach((t) =>
+    add({ id: `tr-${t.id}`, kind: 'treinamento', title: `${t.code} · ${t.title}`, detail: 'Avaliar a eficácia do treinamento', path: `/treinamentos/${t.id}`, due: t.evalBy }));
+
+  db.suppliers.filter((s) => s.owner === name && s.status !== 'bloqueado' && !s.evals.some((e) => e.month === lastClosed)).forEach((s) =>
+    add({ id: `sup-${s.id}`, kind: 'fornecedor', title: `${s.code} · ${s.name}`, detail: `Avaliar o IQF de ${monthLabel(lastClosed)}`, path: `/fornecedores/${s.id}`, due: `${T.slice(0, 7)}-10` }));
 
   return out.sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'));
 }

@@ -21,6 +21,10 @@ export function buildIndex(db: DB): Hit[] {
     ...db.audits.map((a) => H('audits', a.id, a.code, `Auditoria em ${pname(a.processId)}`, `${a.auditor} · ${a.scope}`, ...a.items.map((i) => i.evidence))),
     ...db.docs.map((d) => H('docs', d.id, d.code, d.title, `${d.type} · ${d.owner}`, d.summary)),
     ...db.kpis.map((k) => H('kpis', k.id, '', k.name, `${pname(k.processId)} · ${k.owner}`, k.formula)),
+    ...db.complaints.map((c) => H('complaints', c.id, c.code, `${c.customer}: ${c.product}`, c.owner, c.description, c.response)),
+    ...db.suppliers.map((x) => H('suppliers', x.id, x.code, x.name, x.item, x.owner)),
+    ...db.trainings.map((t) => H('trainings', t.id, t.code, t.title, `${t.instructor} · ${pname(t.processId)}`, ...t.participants.map((p) => p.name), t.notes)),
+    ...db.objectives.map((o) => H('objectives', o.id, o.code, o.title, o.owner, o.plan)),
     ...db.reviews.map((r) => H('reviews', r.id, r.code, 'Análise crítica pela direção', r.participants, r.conclusion, ...r.decisions.map((d) => d.text))),
   ];
 }
@@ -70,7 +74,7 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
       <div className="palette" role="dialog" aria-modal="true" aria-label="Buscar no sistema">
         <div className="pal-input">
           <SearchIcon size={18} aria-hidden="true" />
-          <input ref={input} value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }} onKeyDown={onKey} placeholder="Buscar NC, processo, risco, documento, pessoa…"
+          <input ref={input} value={q} onChange={(e) => { setQ(e.target.value); setSel(0); }} onKeyDown={onKey} placeholder="Buscar NC, reclamação, fornecedor, documento, pessoa…"
             role="combobox" aria-expanded={hits.length > 0} aria-controls="search-results" aria-activedescendant={hits[sel] ? `hit-${sel}` : undefined} aria-label="Buscar" />
           <button className="btn ghost small" onClick={onClose} aria-label="Fechar busca"><X /></button>
         </div>

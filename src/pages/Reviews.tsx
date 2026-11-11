@@ -33,7 +33,7 @@ export default function Reviews() {
       <div className="grid">
         <section className="card s7" style={{ padding: 0 }}>
           {list.length ? (
-            <div className="tscroll" style={{ border: 0 }}>
+            <div className="tscroll" tabIndex={0} style={{ border: 0 }}>
               <table>
                 <thead><tr><th>Análise</th><th>Período</th><th>Decisões</th><th>Situação</th></tr></thead>
                 <tbody>{list.map((r) => (

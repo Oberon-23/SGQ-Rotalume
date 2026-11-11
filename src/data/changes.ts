@@ -10,13 +10,15 @@ import type { DB, Entity, LogEntry, LogField, Role } from './types';
 import { brl, fmtDate, nf, stageLabel } from './utils';
 import type { NCStage } from './types';
 
-export const ENTITIES: Entity[] = ['processes', 'ncs', 'audits', 'docs', 'kpis', 'risks', 'reviews'];
+export const ENTITIES: Entity[] = ['processes', 'ncs', 'audits', 'docs', 'kpis', 'risks', 'reviews', 'suppliers', 'trainings', 'complaints', 'objectives'];
 
 export const ENTITY_LABEL: Record<Entity, string> = {
   processes: 'Processo', ncs: 'Não conformidade', audits: 'Auditoria', docs: 'Documento', kpis: 'Indicador', risks: 'Risco/oportunidade', reviews: 'Análise crítica',
+  suppliers: 'Fornecedor', trainings: 'Treinamento', complaints: 'Reclamação de cliente', objectives: 'Objetivo da qualidade',
 };
 export const ENTITY_PATH: Record<Entity, string> = {
   processes: '/processos', ncs: '/nao-conformidades', audits: '/auditorias', docs: '/documentos', kpis: '/indicadores', risks: '/riscos', reviews: '/analise-critica',
+  suppliers: '/fornecedores', trainings: '/treinamentos', complaints: '/reclamacoes', objectives: '/objetivos',
 };
 
 type Rec = { id: string } & Record<string, unknown>;
@@ -54,6 +56,11 @@ const LABELS: Record<string, string> = {
   unit: 'Unidade', target: 'Meta', higherIsBetter: 'Sentido', formula: 'Fórmula', decimals: 'Casas decimais', values: 'Resultados',
   kind: 'Tipo', cause: 'Causa', consequence: 'Consequência', probability: 'Probabilidade', impact: 'Impacto', treatment: 'Tratamento', action: 'Ação', reviewAt: 'Revisar em',
   from: 'Início do período', to: 'Fim do período', participants: 'Participantes', context: 'Contexto', inputs: 'Entradas', decisions: 'Decisões', conclusion: 'Conclusão', closed: 'Situação',
+  attachments: 'Anexos', complaintId: 'Reclamação de origem', item: 'Item fornecido', critical: 'Crítico', evals: 'Avaliações (IQF)',
+  instructor: 'Instrutor', hours: 'Carga horária', evalBy: 'Avaliar eficácia até', notes: 'Observações', docId: 'Documento',
+  customer: 'Cliente', product: 'Produto', quantity: 'Quantidade', receivedAt: 'Recebida em', valid: 'Procedente', response: 'Resposta ao cliente', ncId: 'Não conformidade', satisfaction: 'Satisfação',
+  kpiId: 'Indicador', deadline: 'Prazo', plan: 'Plano',
+  'approval.step': 'Aprovação: etapa', 'approval.change': 'Aprovação: o que muda', 'approval.author': 'Aprovação: elabora', 'approval.reviewer': 'Aprovação: revisa', 'approval.approver': 'Aprovação: aprova', 'approval.events': 'Aprovação: andamento',
 };
 const label = (entity: Entity, f: string) => {
   if (f.startsWith('ishikawa.')) return `Ishikawa: ${f.slice(9)}`;
@@ -76,6 +83,10 @@ export function fmtValue(entity: Entity, field: string, v: unknown, db?: DB): st
   if (field === 'verification.effective') return v === true ? 'Eficaz' : v === false ? 'Não eficaz' : '—';
   if (field === 'status' && entity === 'docs') return ({ vigente: 'Vigente', revisao: 'Em revisão', obsoleto: 'Obsoleto' } as Record<string, string>)[v as string] ?? String(v);
   if (field === 'status' && entity === 'risks') return ({ aberto: 'Aberto', tratamento: 'Em tratamento', controlado: 'Controlado' } as Record<string, string>)[v as string] ?? String(v);
+  if (field === 'status' && entity === 'suppliers') return ({ qualificado: 'Qualificado', condicional: 'Condicional', bloqueado: 'Bloqueado' } as Record<string, string>)[v as string] ?? String(v);
+  if (field === 'status' && entity === 'complaints') return ({ recebida: 'Recebida', analise: 'Em análise', respondida: 'Respondida', encerrada: 'Encerrada' } as Record<string, string>)[v as string] ?? String(v);
+  if (field === 'approval.step') return ({ elaboracao: 'Elaboração', revisao: 'Revisão técnica', aprovacao: 'Aprovação' } as Record<string, string>)[v as string] ?? String(v);
+  if (field === 'valid' && typeof v === 'boolean') return v ? 'Procedente' : 'Improcedente';
   if (field === 'type' && entity === 'processes') return ({ gestao: 'Gestão', principal: 'Principal', apoio: 'Apoio' } as Record<string, string>)[v as string] ?? String(v);
   if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
   if (typeof v === 'number') return nf(v, Number.isInteger(v) ? 0 : 2);
@@ -89,6 +100,10 @@ export function fmtValue(entity: Entity, field: string, v: unknown, db?: DB): st
     if (field === 'history') return arr.length ? `rev. ${arr[0].version}: ${cut(String(arr[0].change), 80)}` : '—';
     if (field === 'decisions') return `${plural(arr.length, 'decisão', 'decisões')}, ${arr.filter((d) => d.done).length} concluída(s)`;
     if (field === 'inputs') return plural(arr.length, 'seção', 'seções');
+    if (field === 'attachments') return arr.length ? cut(arr.map((a) => a.name).join('; ')) : '—';
+    if (field === 'evals') return plural(arr.length, 'mês avaliado', 'meses avaliados');
+    if (field === 'participants') return `${plural(arr.length, 'participante', 'participantes')}, ${arr.filter((p) => p.status === 'eficaz').length} eficaz(es)`;
+    if (field === 'approval.events') return arr.length ? cut(`${arr[0].user}: ${arr[0].text}`, 90) : '—';
     return plural(arr.length, 'item', 'itens');
   }
   return cut(JSON.stringify(v));

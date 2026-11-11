@@ -20,7 +20,7 @@ export const ROLE_LABEL: Record<Role, string> = { gestor: 'Gestão da qualidade'
 
 export const ROLE_HELP: Record<Role, string> = {
   gestor: 'Pode criar, editar e excluir tudo, programar auditorias e conduzir a análise crítica.',
-  dono: 'Registra não conformidades e riscos e edita o que é dele: os próprios processos, NCs, documentos, indicadores e riscos. Não exclui.',
+  dono: 'Registra não conformidades, riscos e reclamações e edita o que é dele: os próprios processos, NCs, documentos, indicadores, treinamentos e riscos. Não exclui.',
   auditor: 'Programa e conduz auditorias (exceto em processos dos quais é dono), abre NCs a partir das constatações e edita o que é dele.',
   leitor: 'Vê tudo e exporta planilhas, mas não altera nada.',
 };
@@ -38,7 +38,7 @@ export function can(user: User, db: DB, act: Act, entity: Entity | 'data', recor
   const rec = record as Record<string, unknown> | undefined;
   if (user.role === 'gestor') return true;
   if (user.role === 'leitor') return false;
-  if (act === 'delete' || entity === 'data' || entity === 'reviews') return false;
+  if (act === 'delete' || entity === 'data' || entity === 'reviews' || entity === 'objectives') return false;
 
   const me = user.name;
   const procId = (entity === 'processes' ? rec?.id : rec?.processId) as string | undefined;
@@ -56,7 +56,12 @@ export function can(user: User, db: DB, act: Act, entity: Entity | 'data', recor
       return processOwner(db, rec.processId as string) !== me; // independência: não audita o próprio processo
     case 'docs':
     case 'kpis':
+    case 'trainings':
       return act === 'create' ? user.role === 'dono' : isMine;
+    case 'complaints':
+      return act === 'create' ? true : isMine;
+    case 'suppliers':
+      return act === 'edit' && rec?.owner === me;
   }
   return false;
 }

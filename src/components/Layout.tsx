@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { BookOpen, ClipboardCheck, ClipboardList, Database, FileText, Gauge, LayoutDashboard, Presentation, ShieldAlert, ShieldCheck, TriangleAlert, Workflow } from 'lucide-react';
+import { BookOpen, ClipboardCheck, ClipboardList, Database, FileText, Gauge, GraduationCap, LayoutDashboard, MessageSquareWarning, Presentation, ShieldAlert, ShieldCheck, SquareKanban, Target, TriangleAlert, Truck, Workflow } from 'lucide-react';
+import { complaintLate } from '../data/quality';
 import TopBar from './DemoBar';
 import SearchPalette from './Search';
 import Tour, { tourSeen } from './Tour';
@@ -27,20 +28,28 @@ export default function Layout() {
   const late = db.ncs.filter(isLate).length;
   const myLate = user.role === 'leitor' ? 0 : tasksFor(db, user.name).filter((t) => (t.days ?? 1) < 0).length;
   type NavItem = { to: string; label: string; icon: typeof Gauge; end?: boolean; count?: number; countTitle?: string };
+  const complaintsLate = db.complaints.filter((c) => complaintLate(c)).length;
   const groups: { label: string; items: NavItem[] }[] = [
     { label: 'Hoje', items: [
       { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
       { to: '/minhas-pendencias', label: 'Minhas pendências', icon: ClipboardList, count: myLate, countTitle: 'pendências vencidas' },
+      { to: '/quadro', label: 'Quadro de ações', icon: SquareKanban },
       { to: '/nao-conformidades', label: 'Não conformidades', icon: TriangleAlert, count: late, countTitle: 'não conformidades vencidas' },
+      { to: '/reclamacoes', label: 'Reclamações', icon: MessageSquareWarning, count: complaintsLate, countTitle: 'reclamações sem resposta no prazo' },
     ] },
     { label: 'Planejamento', items: [
+      { to: '/objetivos', label: 'Objetivos', icon: Target },
       { to: '/processos', label: 'Processos', icon: Workflow },
       { to: '/riscos', label: 'Riscos e oportunidades', icon: ShieldAlert },
       { to: '/indicadores', label: 'Indicadores', icon: Gauge },
     ] },
+    { label: 'Apoio', items: [
+      { to: '/documentos', label: 'Documentos', icon: FileText },
+      { to: '/treinamentos', label: 'Treinamentos', icon: GraduationCap },
+      { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
+    ] },
     { label: 'Verificação', items: [
       { to: '/auditorias', label: 'Auditorias', icon: ClipboardCheck },
-      { to: '/documentos', label: 'Documentos', icon: FileText },
       { to: '/analise-critica', label: 'Análise crítica', icon: Presentation },
     ] },
     { label: 'Sistema', items: [

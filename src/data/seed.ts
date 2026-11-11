@@ -5,8 +5,9 @@
 import type { Action, Audit, AuditItem, DB, Doc, KPI, LogEntry, NonConformity, Process, Review, Risk, Role, SixM } from './types';
 import { SIX_M } from './types';
 import { addDays, addMonths, lastMonths, today } from './utils';
+import { seedApproval, seedComplaints, seedObjectives, seedSuppliers, seedTrainings } from './seed2';
 
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 const emptyIshikawa = (): Record<SixM, string[]> => Object.fromEntries(SIX_M.map((m) => [m, []])) as unknown as Record<SixM, string[]>;
 
@@ -292,11 +293,28 @@ function seedLog(db: Omit<DB, 'log'>): LogEntry[] {
   db.docs.filter((d) => d.version > 0).forEach((d) => add(d.reviewedAt, '10:30', d.history[0].author, 'docs', d.id, d.code, 'alterou', [{ field: 'Revisão', from: String(d.version - 1), to: String(d.version) }]));
   db.reviews.forEach((r) => add(r.date, '15:00', 'Marina Lopes', 'reviews', r.id, r.code, 'criou'));
   db.risks.forEach((r, i) => add(addDays(T, -200 + i * 9), '11:20', r.owner, 'risks', r.id, r.code, 'criou'));
+  db.complaints.forEach((c) => add(c.receivedAt, '08:50', c.owner, 'complaints', c.id, c.code, 'criou'));
+  db.trainings.forEach((t) => add(addDays(t.date, -20), '14:00', t.instructor, 'trainings', t.id, t.code, 'criou'));
   return out.sort((a, b) => b.at.localeCompare(a.at));
 }
 
 export function seed(): DB {
   const T = today();
-  const base = { version: DB_VERSION, seededAt: T, processes: processes(), ncs: ncs(T), audits: audits(T), docs: docs(T), kpis: kpis(), risks: seedRisks(T), reviews: seedReviews(T) };
+  const d = docs(T);
+  seedApproval(d, T);
+  const base = { version: DB_VERSION, seededAt: T, processes: processes(), ncs: ncs(T), audits: audits(T), docs: d, kpis: kpis(), risks: seedRisks(T), reviews: seedReviews(T),
+    suppliers: seedSuppliers(), trainings: seedTrainings(T), complaints: seedComplaints(T), objectives: seedObjectives(T) };
+  // mais ações planejadas, para o quadro Kanban ter trabalho nas três colunas
+  const more: Record<string, Action[]> = {
+    'nc-2026-065': [A('Pedir relatório 8D ao fornecedor', 'Reincidência de rosca irregular sem causa conhecida', 'Suprimentos', 'Bianca Rocha', addDays(T, 25), 'Reunião com o fornecedor e prazo de 15 dias para o 8D', 0, false)],
+    'nc-2026-071': [A('Treinar os preparadores no novo checklist de setup', 'Garantir que o checklist seja usado', 'Usinagem CNC', 'Diego Moraes', addDays(T, 9), 'Treinamento prático no posto (TR-2026-05)', 0, false),
+      A('Auditar 10 setups depois do treinamento', 'Verificar a eficácia do checklist', 'Usinagem CNC', 'Rafael Duarte', addDays(T, 30), 'Observação direta com o FR-021', 0, false)],
+    'nc-2026-069': [A('Recolher cópias impressas da IT-L2-003 nos postos', 'Contenção: tirar a revisão antiga de circulação', 'Montagem (Linha 2)', 'Patrícia Nunes', addDays(T, -2), 'Conferência posto a posto com a lista de distribuição', 0, false)],
+  };
+  base.ncs.forEach((n) => { if (more[n.id]) n.actions.push(...more[n.id]); });
+  // algumas ações já em execução, para o quadro Kanban não começar com uma coluna vazia
+  ['nc-2026-065', 'nc-2026-071'].forEach((id) => { const a = base.ncs.find((n) => n.id === id)?.actions.find((x) => !x.done); if (a) a.status = 'doing'; });
+  base.reviews.forEach((r) => { const d = r.decisions.find((x) => !x.done); if (d) d.status = 'doing'; });
+  base.ncs.forEach((n) => { const c = base.complaints.find((x) => x.ncId === n.id); if (c) n.complaintId = c.id; });
   return { ...base, log: seedLog(base) };
 }

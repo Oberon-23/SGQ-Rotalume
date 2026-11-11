@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Pencil, Plus, Printer, Trash2, TriangleAlert, X } from 'lucide-react';
 import { Pager, SortTh, useTable } from '../components/Table';
+import Attachments from '../components/Attachments';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 import { nextCode, useStore } from '../data/store';
@@ -72,7 +73,7 @@ export default function Audits() {
         <div className="tile"><span className="lab">Constatações</span><span className="val">{totals.nc + totals.obs + totals.om}</span><span className="sub">{totals.nc} NC · {totals.obs} observações · {totals.om} melhorias</span></div>
       </div>
       <div className="card" style={{ padding: 0 }}>
-        <div className="tscroll" style={{ border: 0 }}>
+        <div className="tscroll" tabIndex={0} style={{ border: 0 }}>
           <table>
             <thead><tr><SortTh t={t} k="code">Auditoria</SortTh><SortTh t={t} k="proc">Processo</SortTh><SortTh t={t} k="date">Data</SortTh><SortTh t={t} k="auditor">Auditor</SortTh><SortTh t={t} k="done">Situação</SortTh><SortTh t={t} k="find">Constatações</SortTh></tr></thead>
             <tbody>
@@ -184,6 +185,7 @@ export function AuditDetail() {
           </div>
         )}
       </section>
+      <Attachments entity="audits" id={a.id} canEdit={canEdit} />
       <History entity="audits" id={a.id} />
       {modal === 'edit' && <AuditForm initial={a} onClose={() => setModal(null)} />}
       {modal === 'delete' && (

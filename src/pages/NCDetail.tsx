@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Pencil, Plus, Printer, RotateCcw, Trash2, Undo2, X } from 'lucide-react';
+import Attachments from '../components/Attachments';
 import History from '../components/History';
 import { ReadOnlyNote } from '../components/DemoBar';
 import { useStore } from '../data/store';
@@ -28,6 +29,7 @@ export default function NCDetail() {
   const ro = !canEdit || nc.stage === 'encerrada' || stageIndex(shown) < cur; // etapas anteriores ficam só para leitura
   const proc = db.processes.find((p) => p.id === nc.processId);
   const audit = nc.auditId ? db.audits.find((a) => a.id === nc.auditId) : undefined;
+  const complaint = nc.complaintId ? db.complaints.find((c) => c.id === nc.complaintId) : undefined;
   const bl = blockers(nc);
   const next = STAGES[cur + 1];
 
@@ -60,7 +62,7 @@ export default function NCDetail() {
             <div className="meta-row" style={{ marginTop: 8 }}>
               <SeverityPill s={nc.severity} /><StagePill s={nc.stage} />{isLate(nc) && <span className="pill dot bad">Vencida há {daysBetween(nc.dueAt, today())} dias</span>}
               <span>Processo <b><Link to={`/processos/${nc.processId}`}>{proc?.name}</Link></b></span>
-              <span>Origem <b>{nc.origin}</b>{audit && <> (<Link to={`/auditorias/${audit.id}`}>{audit.code}</Link>)</>}</span>
+              <span>Origem <b>{nc.origin}</b>{audit && <> (<Link to={`/auditorias/${audit.id}`}>{audit.code}</Link>)</>}{complaint && <> (<Link to={`/reclamacoes/${complaint.id}`}>{complaint.code}</Link>)</>}</span>
               <span>Responsável <b>{nc.owner}</b></span>
               <span>Aberta em <b>{fmtDate(nc.openedAt)}</b></span>
               <span>Prazo <b>{fmtDate(nc.dueAt)}</b></span>
@@ -158,6 +160,7 @@ export default function NCDetail() {
         </section>
       )}
       {view !== null && <div><button className="btn" onClick={() => setView(null)}><ArrowLeft />Voltar para a etapa atual</button></div>}
+      <Attachments entity="ncs" id={nc.id} canEdit={canEdit} />
       <History entity="ncs" id={nc.id} />
       {modal === 'edit' && <NCForm nc={nc} onClose={() => setModal(null)} />}
       {modal === 'back' && prev && (

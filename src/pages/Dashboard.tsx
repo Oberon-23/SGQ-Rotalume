@@ -4,6 +4,7 @@ import { auditFindings, daysBetween, docDueSoon, docOverdue, fmtDate, fmtKpi, is
 import { Headline, KpiPill, SeverityPill, Sparkline, StagePill } from '../components/ui';
 import { tasksFor } from '../data/pending';
 import { TaskRow } from './MyTasks';
+import { STEP_LABEL, complaintLate, evalLate, iqfClass, lastIqf, supplierAlert } from '../data/quality';
 
 export default function Dashboard() {
   const { db, user } = useStore();
@@ -23,7 +24,11 @@ export default function Dashboard() {
   const attention = [
     ...late.map((n) => ({ key: n.id, to: `/nao-conformidades/${n.id}`, title: `${n.code} · ${n.title}`, sub: `Prazo vencido há ${daysBetween(n.dueAt, T)} dias · ${pname(n.processId)}`, tone: 'bad' as const, tag: 'NC vencida' })),
     ...actionsLate.map(({ a, n }) => ({ key: a.id, to: `/nao-conformidades/${n.id}`, title: a.what, sub: `${n.code} · ${a.who} · venceu em ${fmtDate(a.when)}`, tone: 'bad' as const, tag: 'Ação atrasada' })),
-    ...docsLate.map((d) => ({ key: d.id, to: `/documentos/${d.id}`, title: `${d.code} · ${d.title}`, sub: `Revisão venceu em ${fmtDate(d.nextReview)}`, tone: 'warn' as const, tag: 'Revisão vencida' })),
+    ...db.complaints.filter((c) => complaintLate(c, T)).map((c) => ({ key: c.id, to: `/reclamacoes/${c.id}`, title: `${c.code} · ${c.customer}`, sub: `Resposta ao cliente venceu em ${fmtDate(c.dueAt)} · ${c.owner}`, tone: 'bad' as const, tag: 'Reclamação vencida' })),
+    ...db.suppliers.filter((s) => s.critical && supplierAlert(s) && iqfClass(lastIqf(s) ?? 100) === 'C').map((s) => ({ key: s.id, to: `/fornecedores/${s.id}`, title: `${s.name} (${s.item})`, sub: supplierAlert(s)!, tone: 'warn' as const, tag: 'Fornecedor classe C' })),
+    ...db.trainings.filter((t) => evalLate(t, T)).map((t) => ({ key: t.id, to: `/treinamentos/${t.id}`, title: `${t.code} · ${t.title}`, sub: `Avaliar eficácia até ${fmtDate(t.evalBy)} · ${t.owner}`, tone: 'warn' as const, tag: 'Eficácia vencida' })),
+    ...db.docs.filter((d) => d.approval).map((d) => ({ key: `apr-${d.id}`, to: `/documentos/${d.id}`, title: `${d.code} · ${d.title}`, sub: `Revisão ${d.version + 1}: ${STEP_LABEL[d.approval!.step].toLowerCase()}`, tone: 'info' as const, tag: 'Em aprovação' })),
+    ...docsLate.map((d) => ({ key: d.id, to: `/documentos/${d.id}`, title: `${d.code} · ${d.title}`, sub: `Revisão venceu em ${fmtDate(d.nextReview)}`, tone: 'warn' as const, tag: 'Revisão vencida' as string })),
     ...kOff.map((k) => ({ key: k.id, to: `/indicadores/${k.id}`, title: k.name, sub: `Último mês: ${fmtKpi(k, lastValue(k)?.value ?? 0)} · meta ${fmtKpi(k, k.target)}`, tone: 'warn' as const, tag: 'Fora da meta' })),
   ];
   const tone = late.length || actionsLate.length ? 'bad' : attention.length ? 'warn' : 'ok';

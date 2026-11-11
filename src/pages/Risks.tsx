@@ -34,7 +34,7 @@ function Matrix({ items, kind, sel, onSel, mark }: { items: Risk[]; kind: RiskKi
             return (
               <button key={i} role="gridcell" type="button" className={`cell lvl-${l.tone}${n || isMark ? '' : ' empty'}${sel === key ? ' sel' : ''}${isMark ? ' me' : ''}`}
                 disabled={!onSel} style={{ gridRow: 6 - p, gridColumn: i + 2, ...(!onSel ? { cursor: 'default' } : {}) }}
-                aria-label={`Probabilidade ${p}, ${xLabel.toLowerCase()} ${i}: ${n} registro${n === 1 ? '' : 's'}`} aria-pressed={sel === key}
+                aria-label={`Probabilidade ${p}, ${xLabel.toLowerCase()} ${i}: ${n} registro${n === 1 ? '' : 's'}`} aria-selected={sel === key}
                 onClick={() => onSel?.(sel === key ? null : key)}>{isMark ? '●' : n || '·'}</button>
             );
           })}
@@ -146,7 +146,7 @@ export default function Risks() {
         <section className="card" style={{ padding: 0, minWidth: 0 }}>
           {cell && <div style={{ padding: '12px 16px 0', fontSize: 13.5 }} className="ink2">Filtrando probabilidade {cell.split('-')[0]} × {kind === 'oportunidade' ? 'benefício' : 'impacto'} {cell.split('-')[1]}. <button className="btn small ghost" onClick={() => setCell(null)}>Limpar</button></div>}
           {rows.length ? (
-            <div className="tscroll" style={{ border: 0 }}>
+            <div className="tscroll" tabIndex={0} style={{ border: 0 }}>
               <table>
                 <thead><tr><SortTh t={t} k="title">Registro</SortTh><SortTh t={t} k="level">Nível</SortTh><SortTh t={t} k="treat">Tratamento</SortTh><SortTh t={t} k="owner">Responsável</SortTh><SortTh t={t} k="review">Reavaliar</SortTh><SortTh t={t} k="status">Situação</SortTh></tr></thead>
                 <tbody>{t.view.map((r) => (

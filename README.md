@@ -27,14 +27,20 @@ Os painéis anteriores do portfólio **mostram** números. Este projeto **opera*
 
 | Módulo | O que faz | ISO 9001:2015 |
 |---|---|---|
-| **Painel** | Resumo do dia: NCs vencidas, ações atrasadas, auditorias próximas, documentos a revisar, indicadores fora da meta | 9.1 |
+| **Painel** | Resumo do dia: NCs vencidas, ações atrasadas, reclamações sem resposta, fornecedores na classe C, documentos em aprovação, indicadores fora da meta | 9.1 |
+| **Quadro de ações** | Kanban (A fazer, Em andamento, Concluído) com as ações 5W2H de todas as NCs e as decisões da direção. Arrastar ou usar as setas, filtros por pessoa e origem, alerta de atraso e de excesso de trabalho em andamento | 10.2 |
+| **Reclamações de clientes** | Prazo de resposta de 10 dias, procedência, NC aberta com um clique, resposta e nota de satisfação do cliente | 8.2.1, 9.1.2 |
+| **Objetivos da qualidade** | Cada objetivo ligado a um indicador, com linha de base, meta, prazo e progresso automático | 6.2 |
 | **Não conformidades** | Fluxo em 5 etapas: registro e contenção → análise de causa (5 Porquês + Ishikawa 6M) → plano de ação (5W2H) → verificação de eficácia → encerramento | 10.2 |
 | **Processos** | Mapa de processos (gestão, principais, apoio) com SIPOC, dono, objetivo e vínculos | 4.4 |
 | **Riscos e oportunidades** | Matriz 5×5 de probabilidade × impacto, tratamento, responsável e data de reavaliação | 6.1 |
 | **Auditorias internas** | Programa por processo e checklist por requisito (C / NC / OBS / OM). Uma constatação de NC abre a não conformidade já vinculada | 9.2 |
-| **Documentos** | Lista mestra com revisões, histórico de versões, status e prazo de revisão periódica | 7.5 |
+| **Documentos** | Lista mestra com revisões e prazo de revisão periódica. Toda revisão passa por elaboração → revisão técnica → aprovação, com separação de funções (quem elabora não aprova) | 7.5 |
+| **Treinamentos** | Participantes, avaliação de eficácia no posto até 30 dias depois e matriz de competências | 7.2 |
+| **Fornecedores** | IQF mensal (50% qualidade, 30% entrega, 20% atendimento), classes A/B/C, alertas e situação (qualificado, condicional, bloqueado) | 8.4 |
 | **Indicadores** | KPIs com meta e sentido (maior ou menor é melhor), série mensal e alertas fora da meta | 9.1 |
 | **Análise crítica** | Entradas da 9.3.2 montadas automaticamente a partir dos módulos, decisões com responsável e prazo, ata em PDF | 9.3 |
+| **Evidências** | Fotos, laudos e PDFs anexados às NCs e auditorias | 7.5 |
 | **Dados e backup** | Trilha de auditoria completa, backup .json, restauração e exportação CSV | 7.5.3 |
 
 ![Não conformidade com Ishikawa](docs/nc.png)
@@ -49,7 +55,8 @@ Os painéis anteriores do portfólio **mostram** números. Este projeto **opera*
 - **Notificações**: o sino mostra prazos vencidos e dos próximos 7 dias, com contador do que ainda não foi visto.
 - **Busca geral** (`Ctrl + K` ou `/`): códigos, assuntos e pessoas em todos os módulos, sem diferenciar acentos, com navegação pelo teclado.
 - **Listas**: ordenação por coluna, paginação e, nas não conformidades, ações em lote (reatribuir responsável, alterar prazo, exportar a seleção), respeitando o perfil.
-- **Apresentação guiada** na primeira visita, reabrível pelo botão **?**.
+- **Tour guiado** na primeira visita: destaca cada parte da tela, abre a página certa e pode ser pulado a qualquer momento. Reabre pelo botão **?**.
+- **Menu por etapa do ciclo**: Hoje, Planejamento, Apoio, Verificação e Sistema.
 
 ### Perfis de acesso
 
@@ -122,9 +129,9 @@ src/
 
 | Etapa | Itens |
 |---|---|
-| Feito | 7 módulos ISO, CRUD completo, perfis, trilha de auditoria, relatórios PDF, pendências por pessoa, notificações, busca geral, listas com lote, backup, testes e CI |
+| Feito | 12 módulos ISO, quadro Kanban, aprovação de documentos, anexos de evidência, tour guiado, CRUD completo, perfis, trilha de auditoria, relatórios PDF, pendências por pessoa, notificações, busca geral, listas com lote, backup, testes e CI |
 | Próximo | Banco Postgres (Supabase), login, empresas separadas, regras de acesso no banco |
-| Depois | Anexos de evidência, e-mails de prazo (a regra já existe em `pending.ts`), aprovação de documentos, fornecedores (IQF), treinamentos, calibração |
+| Depois | Anexos no armazenamento do banco, e-mails de prazo (a regra já existe em `pending.ts`), calibração de instrumentos, BPMN no mapa de processos |
 | Produto | Adequação à LGPD, planos de assinatura, importação de planilhas existentes |
 
 ## Stack e qualidade
@@ -133,7 +140,9 @@ src/
 - Gráficos e matriz de risco em SVG/CSS próprios, sem biblioteca
 - Tema claro (creme), escuro e automático
 - **Vitest**: testes das regras de negócio (PDCA, matriz de risco, trilha, permissões, migração, análise crítica, pendências, busca)
-- **GitHub Actions**: lint, testes e build a cada envio
+- **Playwright**: testes de ponta a ponta no navegador (tour, reclamação → NC, aprovação de documento, Kanban, permissões, anexos), no computador e no celular
+- **axe-core**: checagem automática de acessibilidade (WCAG 2.1 AA) em todas as páginas
+- **GitHub Actions**: lint, testes, build e testes no navegador a cada envio
 - Deploy na Vercel
 
 ## Como rodar
@@ -141,7 +150,8 @@ src/
 ```bash
 npm install
 npm run dev      # desenvolvimento
-npm test         # testes
+npm test         # testes das regras
+npm run e2e      # testes no navegador e acessibilidade (depois do build)
 npm run build    # build de produção em dist/
 ```
 

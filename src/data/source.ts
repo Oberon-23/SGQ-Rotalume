@@ -9,6 +9,7 @@
 import type { DB } from './types';
 import type { Change } from './changes';
 import { DB_VERSION, seedReviews, seedRisks } from './seed';
+import { seedComplaints, seedObjectives, seedSuppliers, seedTrainings } from './seed2';
 import { today } from './utils';
 
 export interface DataSource {
@@ -44,6 +45,7 @@ export const localSource: DataSource = {
 /**
  * Atualiza dados salvos por versões anteriores, sem perder o que o usuário cadastrou.
  * v1 → v2: entram os módulos de riscos e análise crítica (com exemplos) e a trilha de auditoria.
+ * v2 → v3: entram fornecedores, treinamentos, reclamações e objetivos (com exemplos).
  * Devolve null se o conteúdo não for um banco do SGQ.
  */
 export function migrate(raw: unknown): DB | null {
@@ -57,7 +59,12 @@ export function migrate(raw: unknown): DB | null {
     const ids = new Set(db.processes.map((p) => p.id));
     db = { ...db, version: 2, risks: seedRisks(T).filter((r) => ids.has(r.processId)), reviews: seedReviews(T), log: [] };
   }
+  if (db.version === 2) {
+    const T = today();
+    db = { ...db, version: 3, suppliers: seedSuppliers(), trainings: seedTrainings(T), complaints: seedComplaints(T).filter((c) => !c.ncId || db.ncs.some((n) => n.id === c.ncId)), objectives: seedObjectives(T).filter((o) => db.kpis.some((k) => k.id === o.kpiId)) };
+  }
   if (!Array.isArray(db.risks) || !Array.isArray(db.reviews) || !Array.isArray(db.log)) return null;
+  if (!['suppliers', 'trainings', 'complaints', 'objectives'].every((k) => Array.isArray((db as unknown as Record<string, unknown>)[k]))) return null;
   // versões anteriores podiam gravar buracos na lista de porquês (viravam null no JSON)
   db.ncs.forEach((n) => { n.whys = Array.from(n.whys ?? [], (w) => w ?? ''); });
   return db;

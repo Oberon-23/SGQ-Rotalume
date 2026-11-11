@@ -28,7 +28,11 @@ export interface Action {
   how: string;    // Como
   howMuch: number; // Quanto (R$)
   done: boolean;
+  /** Coluna no quadro Kanban. Sem valor: "a fazer" (ou "concluído", se done). */
+  status?: BoardStatus;
 }
+
+export type BoardStatus = 'todo' | 'doing' | 'done';
 
 export interface NonConformity {
   id: string;
@@ -51,7 +55,12 @@ export interface NonConformity {
   actions: Action[];
   verification: { effective: boolean | null; evidence: string; date: string };
   auditId?: string;
+  complaintId?: string;
+  attachments?: Attachment[];
 }
+
+/** Arquivo de evidência anexado a um registro (guardado no navegador como data URL). */
+export interface Attachment { id: string; name: string; type: string; size: number; data: string; at: string; user: string }
 
 export type AuditResult = 'C' | 'NC' | 'OBS' | 'OM' | null;
 export interface AuditItem {
@@ -71,6 +80,7 @@ export interface Audit {
   done: boolean;
   scope: string;
   items: AuditItem[];
+  attachments?: Attachment[];
 }
 
 export type DocType = 'Manual' | 'Procedimento' | 'Instrução de trabalho' | 'Formulário';
@@ -89,6 +99,19 @@ export interface Doc {
   reviewedAt: string;
   nextReview: string;
   history: DocVersion[];
+  /** Revisão em andamento: elaboração → revisão técnica → aprovação. */
+  approval?: DocApproval;
+}
+
+export type ApprovalStep = 'elaboracao' | 'revisao' | 'aprovacao';
+export interface ApprovalEvent { at: string; user: string; text: string; kind: 'enviou' | 'aprovou' | 'devolveu' | 'iniciou' | 'publicou' }
+export interface DocApproval {
+  step: ApprovalStep;
+  change: string;     // o que muda nesta revisão
+  author: string;     // quem elabora
+  reviewer: string;   // revisão técnica
+  approver: string;   // aprovação final
+  events: ApprovalEvent[];
 }
 
 export interface KPIValue { month: string; value: number } // month = 'AAAA-MM'
@@ -127,7 +150,7 @@ export interface Risk {
 
 /* ---------- análise crítica pela direção (ISO 9001, 9.3) ---------- */
 export interface ReviewSection { clause: string; title: string; items: string[] }
-export interface ReviewDecision { id: string; text: string; owner: string; due: string; done: boolean }
+export interface ReviewDecision { id: string; text: string; owner: string; due: string; done: boolean; status?: BoardStatus }
 export interface Review {
   id: string;
   code: string;
@@ -142,9 +165,72 @@ export interface Review {
   closed: boolean;
 }
 
+/* ---------- fornecedores (ISO 9001, 8.4) ---------- */
+export type SupplierStatus = 'qualificado' | 'condicional' | 'bloqueado';
+export interface SupplierEval { month: string; quality: number; delivery: number; service: number; note: string }
+export interface Supplier {
+  id: string;
+  code: string;
+  name: string;
+  item: string;
+  critical: boolean;
+  owner: string;
+  status: SupplierStatus;
+  evals: SupplierEval[];   // mais antiga primeiro
+}
+
+/* ---------- competência e treinamentos (ISO 9001, 7.2) ---------- */
+export type ParticipantStatus = 'pendente' | 'concluido' | 'eficaz' | 'ineficaz';
+export interface Participant { name: string; status: ParticipantStatus }
+export interface Training {
+  id: string;
+  code: string;
+  title: string;
+  processId: string;
+  docId?: string;          // documento que motivou o treinamento
+  instructor: string;
+  date: string;
+  hours: number;
+  owner: string;           // quem avalia a eficácia
+  evalBy: string;          // data limite da avaliação de eficácia
+  participants: Participant[];
+  notes: string;
+}
+
+/* ---------- reclamações de cliente (ISO 9001, 8.2.1 e 9.1.2) ---------- */
+export type ComplaintStatus = 'recebida' | 'analise' | 'respondida' | 'encerrada';
+export interface Complaint {
+  id: string;
+  code: string;
+  customer: string;
+  product: string;
+  description: string;
+  quantity: number;
+  receivedAt: string;
+  dueAt: string;
+  owner: string;
+  status: ComplaintStatus;
+  valid: boolean | null;   // procedente?
+  response: string;
+  ncId?: string;
+  satisfaction?: number;   // 1 a 5, nota do cliente após a resposta
+}
+
+/* ---------- objetivos da qualidade (ISO 9001, 6.2) ---------- */
+export interface Objective {
+  id: string;
+  code: string;
+  title: string;
+  kpiId: string;
+  target: number;
+  deadline: string;
+  owner: string;
+  plan: string;
+}
+
 /* ---------- usuários de demonstração e trilha de auditoria ---------- */
 export type Role = 'gestor' | 'dono' | 'auditor' | 'leitor';
-export type Entity = 'processes' | 'ncs' | 'audits' | 'docs' | 'kpis' | 'risks' | 'reviews';
+export type Entity = 'processes' | 'ncs' | 'audits' | 'docs' | 'kpis' | 'risks' | 'reviews' | 'suppliers' | 'trainings' | 'complaints' | 'objectives';
 export interface LogField { field: string; from: string; to: string }
 export interface LogEntry {
   id: string;
@@ -168,5 +254,9 @@ export interface DB {
   kpis: KPI[];
   risks: Risk[];
   reviews: Review[];
+  suppliers: Supplier[];
+  trainings: Training[];
+  complaints: Complaint[];
+  objectives: Objective[];
   log: LogEntry[];
 }

@@ -52,7 +52,7 @@ export default function Tour({ onClose }: { onClose: () => void }) {
       title: 'O menu segue o ciclo da qualidade',
       target: '.nav',
       body: <>
-        <p><b>Hoje</b>: o que precisa de ação. <b>Planejamento</b>: processos, riscos e indicadores. <b>Verificação</b>: auditorias, documentos e análise crítica. <b>Sistema</b>: dados e sobre.</p>
+        <p><b>Hoje</b>: o que precisa de ação. <b>Planejamento</b>: objetivos, processos, riscos e indicadores. <b>Apoio</b>: documentos, treinamentos e fornecedores. <b>Verificação</b>: auditorias e análise crítica.</p>
         <p>O número vermelho mostra o que está vencido.</p>
       </>,
     },
@@ -62,32 +62,56 @@ export default function Tour({ onClose }: { onClose: () => void }) {
       target: '.stepper',
       body: <>
         <p>Cada não conformidade passa por etapas: descrição, contenção, causa, ação e verificação de eficácia.</p>
-        <p>O sistema <b>não deixa avançar</b> sem 3 porquês e causa raiz. Teste na NC-2026-069.</p>
+        <p>O sistema <b>não deixa avançar</b> sem 3 porquês e causa raiz. Fotos e laudos entram como evidência anexada.</p>
       </>,
+    },
+    {
+      title: 'Quadro de ações (Kanban)',
+      go: '/quadro',
+      target: '.board',
+      body: <p>Todas as ações das NCs e as decisões da direção num quadro só: <b>A fazer, Em andamento e Concluído</b>. Arraste os cartões ou use as setas. O quadro avisa quando alguém pega trabalho demais ao mesmo tempo.</p>,
+    },
+    {
+      title: 'Reclamações de clientes',
+      go: '/reclamacoes',
+      target: '.tiles',
+      body: <p>Prazo de resposta de 10 dias, procedência e nota de satisfação do cliente. Reclamação procedente abre uma <b>não conformidade</b> com um clique.</p>,
+    },
+    {
+      title: 'Objetivos da qualidade',
+      go: '/objetivos',
+      target: '.obj-grid',
+      body: <p>Cada objetivo é medido por um indicador do sistema. O progresso vai da linha de base até a meta e o status muda sozinho quando o mês fecha.</p>,
     },
     {
       title: 'Matriz de riscos',
       go: '/riscos',
       target: '.matrix',
-      body: <p>Probabilidade por impacto. <b>Clique numa célula</b> para filtrar a lista de riscos e oportunidades abaixo.</p>,
+      body: <p>Probabilidade por impacto. <b>Clique numa célula</b> para filtrar a lista de riscos e oportunidades.</p>,
     },
     {
-      title: 'Indicadores',
-      go: '/indicadores',
-      target: '.page-head',
-      body: <p>Metas, tendência e leitura por período. Cada indicador abre num gráfico com a meta e o histórico das medições.</p>,
+      title: 'Aprovação de documentos',
+      go: '/documentos/it-l2-003',
+      target: '.approval',
+      body: <p>Toda revisão passa por <b>elaboração, revisão técnica e aprovação</b>, cada etapa com seu responsável. Quem elabora não aprova a própria revisão. Como Marina, você pode aprovar esta agora.</p>,
     },
     {
-      title: 'Auditorias e documentos',
+      title: 'Fornecedores (IQF)',
+      go: '/fornecedores',
+      target: '.tiles',
+      body: <p>Avaliação mensal: 50% qualidade, 30% entrega e 20% atendimento. Fornecedor crítico na classe C gera alerta no painel.</p>,
+    },
+    {
+      title: 'Treinamentos e competências',
+      go: '/treinamentos',
+      target: '.cmatrix',
+      body: <p>Quem foi treinado em quê e se o treinamento funcionou. A eficácia é avaliada no posto até 30 dias depois.</p>,
+    },
+    {
+      title: 'Auditorias e análise crítica',
       go: '/auditorias',
       target: '.page-head',
-      body: <p>Programa de auditorias com achados ligados às não conformidades. Em <b>Documentos</b> ficam as revisões, o status e o responsável por cada procedimento.</p>,
-    },
-    {
-      title: 'Análise crítica da direção',
-      go: '/analise-critica',
-      target: '.page-head',
-      body: <p>Monta a pauta da ISO 9001 com os dados do próprio sistema: indicadores, auditorias, riscos e não conformidades.</p>,
+      body: <p>Programa de auditorias com checklist da ISO 9001 e achados ligados às NCs. A <b>análise crítica</b> monta a pauta da direção com os dados de todos os módulos.</p>,
     },
     {
       title: 'Ache tudo rápido',

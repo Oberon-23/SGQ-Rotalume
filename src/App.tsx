@@ -20,6 +20,14 @@ const RiskDetail = lazy(() => import('./pages/Risks').then((m) => ({ default: m.
 const Reviews = lazy(() => import('./pages/Reviews'));
 const ReviewDetail = lazy(() => import('./pages/Reviews').then((m) => ({ default: m.ReviewDetail })));
 const Print = lazy(() => import('./pages/Print'));
+const Complaints = lazy(() => import('./pages/Complaints'));
+const ComplaintDetail = lazy(() => import('./pages/Complaints').then((m) => ({ default: m.ComplaintDetail })));
+const Suppliers = lazy(() => import('./pages/Suppliers'));
+const SupplierDetail = lazy(() => import('./pages/Suppliers').then((m) => ({ default: m.SupplierDetail })));
+const Trainings = lazy(() => import('./pages/Trainings'));
+const TrainingDetail = lazy(() => import('./pages/Trainings').then((m) => ({ default: m.TrainingDetail })));
+const Objectives = lazy(() => import('./pages/Objectives'));
+const Board = lazy(() => import('./pages/Board'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
 
 const NotFound = () => <div className="page"><h1>Página não encontrada</h1><p className="ink2">Esse endereço não existe no sistema.</p><Link className="btn" to="/" style={{ justifySelf: 'start' }}>Voltar ao painel</Link></div>;
@@ -48,6 +56,15 @@ export default function App() {
             <Route path="documentos/:id" element={<DocumentDetail />} />
             <Route path="indicadores" element={<Indicators />} />
             <Route path="indicadores/:id" element={<IndicatorDetail />} />
+            <Route path="quadro" element={<Board />} />
+            <Route path="reclamacoes" element={<Complaints />} />
+            <Route path="reclamacoes/:id" element={<ComplaintDetail />} />
+            <Route path="fornecedores" element={<Suppliers />} />
+            <Route path="fornecedores/:id" element={<SupplierDetail />} />
+            <Route path="treinamentos" element={<Trainings />} />
+            <Route path="treinamentos/:id" element={<TrainingDetail />} />
+            <Route path="objetivos" element={<Objectives />} />
+            <Route path="objetivos/:id" element={<Objectives />} />
             <Route path="dados" element={<Data />} />
             <Route path="sobre" element={<About />} />
             <Route path="*" element={<NotFound />} />

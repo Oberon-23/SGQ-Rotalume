@@ -66,7 +66,7 @@ export default function Indicators() {
         {off.length ? `Fora da meta: ${off.map((k) => k.name).join(', ')}.` : ''}
       </Headline>
       <div className="card" style={{ padding: 0 }}>
-        <div className="tscroll" style={{ border: 0 }}>
+        <div className="tscroll" tabIndex={0} style={{ border: 0 }}>
           <table>
             <thead><tr><SortTh t={t} k="name">Indicador</SortTh><SortTh t={t} k="proc">Processo</SortTh><th>Último mês</th><th>Meta</th><th>12 meses</th><SortTh t={t} k="hits">Meses na meta</SortTh><SortTh t={t} k="ok">Situação</SortTh></tr></thead>
             <tbody>{t.view.map((k) => { const v = lastValue(k); const hits = k.values.filter((x) => kpiOk(k, x.value)).length; return (
@@ -149,7 +149,7 @@ export function IndicatorDetail() {
       </section>
       <section className="card">
         <h2>Resultados</h2>
-        <div className="tscroll" style={{ marginTop: 10 }}><table>
+        <div className="tscroll" tabIndex={0} style={{ marginTop: 10 }}><table>
           <thead><tr><th>Mês</th><th>Resultado</th><th>Situação</th><th></th></tr></thead>
           <tbody>{[...k.values].reverse().map((x) => (
             <tr key={x.month}><td>{monthLabel(x.month)}</td><td style={{ fontWeight: 650 }}>{fmtKpi(k, x.value)}</td><td><KpiPill k={k} v={x.value} /></td>

@@ -6,6 +6,8 @@ import { can, USERS } from './access';
 import { migrate } from './source';
 import { reviewInputs } from './review';
 import type { DB } from './types';
+import { cards, moveCard } from './board';
+import { advance, approvalProblems, canActOnApproval, complaintBlockers, evalLate, iqf, iqfClass, objectiveProgress, objectiveState, sendBack, startRevision, supplierAlert, trainingEfficacy, trainingState } from './quality';
 
 const fresh = (): DB => seed();
 const user = (id: string) => USERS.find((u) => u.id === id)!;
@@ -128,12 +130,12 @@ describe('permissões por perfil', () => {
 });
 
 describe('migração de dados salvos', () => {
-  it('leva um banco v1 para v2 sem perder o que existia', () => {
+  it('leva um banco v1 para a versão atual sem perder o que existia', () => {
     const v1 = fresh() as Partial<DB>;
     v1.version = 1; delete v1.risks; delete v1.reviews; delete v1.log;
     v1.ncs![0].whys = ['a', null as unknown as string, 'c'];
     const db = migrate(JSON.parse(JSON.stringify(v1)))!;
-    expect(db.version).toBe(2);
+    expect(db.version).toBe(3);
     expect(db.ncs).toHaveLength(12);
     expect(db.risks.length).toBeGreaterThan(0);
     expect(db.log).toEqual([]);
@@ -187,5 +189,109 @@ describe('busca geral', () => {
     expect(search(idx, 'calibracao').length).toBeGreaterThan(0);
     expect(search(idx, 'bianca rocha').some((h) => h.entity === 'processes')).toBe(true);
     expect(search(idx, '   ')).toEqual([]);
+  });
+});
+
+describe('fornecedores (IQF)', () => {
+  it('pondera 50% qualidade, 30% entrega e 20% atendimento', () => {
+    expect(iqf({ month: '2026-01', quality: 100, delivery: 50, service: 0, note: '' })).toBe(65);
+    expect(iqfClass(85)).toBe('A');
+    expect(iqfClass(84.9)).toBe('B');
+    expect(iqfClass(69.9)).toBe('C');
+  });
+  it('alerta fornecedor com dois meses seguidos na classe C', () => {
+    const s = fresh().suppliers.find((x) => x.code === 'F-02')!;
+    s.evals.push({ month: '2099-01', quality: 50, delivery: 60, service: 60, note: '' }, { month: '2099-02', quality: 55, delivery: 60, service: 60, note: '' });
+    expect(supplierAlert(s)).toMatch(/Dois meses seguidos/);
+  });
+});
+
+describe('treinamentos', () => {
+  it('pede avaliação de eficácia depois da data e calcula a eficácia', () => {
+    const t = fresh().trainings.find((x) => x.code === 'TR-2026-01')!;
+    expect(trainingState(t)).toBe('concluido');
+    expect(trainingEfficacy(t)).toBe(80);
+    expect(trainingState(fresh().trainings.find((x) => x.code === 'TR-2026-05')!)).toBe('programado');
+    expect(evalLate(fresh().trainings.find((x) => x.code === 'TR-2026-04')!)).toBe(true);
+  });
+});
+
+describe('reclamações de cliente', () => {
+  it('reclamação procedente não avança sem NC e resposta', () => {
+    const c = { ...fresh().complaints.find((x) => x.code === 'RC-2026-05')!, valid: true };
+    const b = complaintBlockers(c);
+    expect(b).toContain('Escreva a resposta ao cliente.');
+    expect(b).toContain('Reclamação procedente precisa de uma não conformidade.');
+    expect(complaintBlockers({ ...c, valid: false, response: 'Improcedente.' })).toEqual([]);
+  });
+});
+
+describe('objetivos da qualidade', () => {
+  it('mede o progresso entre a linha de base e a meta do objetivo', () => {
+    const db = fresh();
+    const o = db.objectives[0];
+    const k = { ...db.kpis.find((x) => x.id === o.kpiId)! };
+    k.values = [{ month: '2026-01', value: 60 }, { month: '2026-02', value: 51 }];
+    expect(objectiveProgress({ ...o, target: 42 }, k).pct).toBe(50);
+    k.values = [{ month: '2026-01', value: 60 }, { month: '2026-02', value: 40 }];
+    expect(objectiveState({ ...o, target: 42 }, k)).toBe('atingido');
+  });
+});
+
+describe('aprovação de documentos', () => {
+  it('elaboração → revisão → aprovação publica uma nova revisão', () => {
+    const d = structuredClone(fresh().docs.find((x) => x.code === 'PR-003')!);
+    const v = d.version;
+    startRevision(d, { change: 'Novo checklist.', author: 'Marina Lopes', reviewer: 'Rafael Duarte', approver: 'Eduardo Campos' }, 'Marina Lopes');
+    expect(d.status).toBe('revisao');
+    expect(canActOnApproval(d, user('rafael'))).toBe(false);
+    advance(d, 'Marina Lopes', '');
+    expect(canActOnApproval(d, user('rafael'))).toBe(true);
+    expect(canActOnApproval(d, user('visitante'))).toBe(false);
+    sendBack(d, 'Rafael Duarte', 'Falta a cláusula 9.2.');
+    expect(d.approval!.step).toBe('elaboracao');
+    advance(d, 'Marina Lopes', ''); advance(d, 'Rafael Duarte', '');
+    expect(advance(d, 'Eduardo Campos', '')).toBe(true);
+    expect(d.version).toBe(v + 1);
+    expect(d.status).toBe('vigente');
+    expect(d.approval).toBeUndefined();
+  });
+  it('não deixa quem elabora aprovar a própria revisão', () => {
+    expect(approvalProblems({ change: 'x', author: 'Ana', reviewer: 'Bia', approver: 'Ana' })).toContain('Quem elabora não pode revisar nem aprovar a própria revisão.');
+  });
+  it('permissões dos módulos novos', () => {
+    const db = fresh();
+    expect(can(user('visitante'), db, 'create', 'complaints')).toBe(false);
+    expect(can(user('diego'), db, 'create', 'complaints')).toBe(true);
+    expect(can(user('diego'), db, 'edit', 'trainings', db.trainings.find((t) => t.code === 'TR-2026-05'))).toBe(true);
+    expect(can(user('diego'), db, 'edit', 'trainings', db.trainings.find((t) => t.code === 'TR-2026-01'))).toBe(false);
+    expect(can(user('rafael'), db, 'edit', 'objectives', db.objectives[0])).toBe(false);
+    expect(can(user('marina'), db, 'delete', 'suppliers', db.suppliers[0])).toBe(true);
+  });
+  it('leva um banco v2 para v3 com os módulos novos', () => {
+    const v2 = JSON.parse(JSON.stringify(fresh())) as Record<string, unknown>;
+    v2.version = 2; delete v2.suppliers; delete v2.trainings; delete v2.complaints; delete v2.objectives;
+    const db = migrate(v2)!;
+    expect(db.version).toBe(3);
+    expect(db.suppliers.length).toBeGreaterThan(0);
+    expect(db.complaints.every((c) => !c.ncId || db.ncs.some((n) => n.id === c.ncId))).toBe(true);
+  });
+});
+
+describe('quadro Kanban', () => {
+  it('junta ações das NCs abertas e decisões, com as três colunas preenchidas', () => {
+    const list = cards(fresh());
+    expect(list.some((c) => c.kind === 'acao')).toBe(true);
+    expect(list.some((c) => c.kind === 'decisao')).toBe(true);
+    for (const col of ['todo', 'doing', 'done'] as const) expect(list.filter((c) => c.status === col).length).toBeGreaterThan(0);
+  });
+  it('mover para concluído marca a ação como feita, e voltar desmarca', () => {
+    const db = fresh();
+    const c = cards(db).find((x) => x.kind === 'acao' && x.status === 'todo')!;
+    moveCard(db, c.key, 'done');
+    expect(cards(db).find((x) => x.key === c.key)!.status).toBe('done');
+    expect(db.ncs.find((n) => n.id === c.parentId)!.actions.find((a) => a.id === c.id)!.done).toBe(true);
+    moveCard(db, c.key, 'doing');
+    expect(db.ncs.find((n) => n.id === c.parentId)!.actions.find((a) => a.id === c.id)!.done).toBe(false);
   });
 });
