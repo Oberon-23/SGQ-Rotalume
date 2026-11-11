@@ -139,9 +139,11 @@ src/
 - React 19 + TypeScript + Vite, React Router, lucide-react
 - Gráficos e matriz de risco em SVG/CSS próprios, sem biblioteca
 - Tema claro (creme), escuro e automático
-- **Vitest**: testes das regras de negócio (PDCA, matriz de risco, trilha, permissões, migração, análise crítica, pendências, busca)
-- **Playwright**: testes de ponta a ponta no navegador (tour, reclamação → NC, aprovação de documento, Kanban, permissões, anexos), no computador e no celular
-- **axe-core**: checagem automática de acessibilidade (WCAG 2.1 AA) em todas as páginas
+- **Vitest**: 46 testes das regras de negócio (PDCA, matriz de risco, IQF, aprovação, Kanban, trilha, permissões, migração, CSV), com cobertura mínima obrigatória (hoje 97% das linhas)
+- **Playwright**: 162 testes no navegador, no computador e no celular: todas as telas abrem sem erro e sem rolagem lateral, nenhum link interno quebrado, cadastros de cada módulo, aprovação de documento com três pessoas, Kanban, permissões, anexos, backup e importação, migração de dados antigos e busca
+- **axe-core**: acessibilidade (WCAG 2.1 AA) em todas as páginas, no tema claro e no escuro
+- **Segurança**: política de conteúdo (CSP) e cabeçalhos de segurança na Vercel, aplicados também nos testes; cache longo para os arquivos com hash
+- **Performance**: Lighthouse 96 a 98 no celular, páginas carregadas sob demanda e bibliotecas em pacote separado
 - **GitHub Actions**: lint, testes, build e testes no navegador a cada envio
 - Deploy na Vercel
 

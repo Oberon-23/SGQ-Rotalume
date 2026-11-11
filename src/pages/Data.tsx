@@ -8,6 +8,7 @@ import { LogLine, fmtDateTime } from '../components/History';
 import { csv, download } from '../data/csv';
 import { fmtDate, stageLabel, today } from '../data/utils';
 import { Confirm } from '../components/ui';
+import { iqf, iqfClass } from '../data/quality';
 
 export default function Data() {
   const { db, replace, reset, notify, can, sourceName } = useStore();
@@ -38,6 +39,21 @@ export default function Data() {
     const rows: (string | number | undefined)[][] = [['Data e hora', 'Usuário', 'Perfil', 'Módulo', 'Registro', 'Ação', 'Campo', 'Antes', 'Depois']];
     db.log.forEach((e) => (e.fields.length ? e.fields : [{ field: '', from: '', to: '' }]).forEach((f) => rows.push([fmtDateTime(e.at), e.user, ROLE_LABEL[e.role], ENTITY_LABEL[e.entity], e.label, e.action, f.field, f.from, f.to])));
     download(`trilha-de-auditoria-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8'); notify('Trilha de auditoria baixada.');
+  };
+  const exportComplaints = () => {
+    const rows: (string | number | undefined)[][] = [['Código', 'Cliente', 'Produto', 'Relato', 'Peças', 'Recebida em', 'Responder até', 'Situação', 'Procedente', 'NC', 'Satisfação (1 a 5)', 'Responsável']];
+    db.complaints.forEach((c) => rows.push([c.code, c.customer, c.product, c.description, c.quantity, c.receivedAt, c.dueAt, c.status, c.valid === null ? '' : c.valid ? 'sim' : 'não', db.ncs.find((n) => n.id === c.ncId)?.code, c.satisfaction, c.owner]));
+    download(`reclamacoes-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8'); notify('Planilha de reclamações baixada.');
+  };
+  const exportSuppliers = () => {
+    const rows: (string | number | undefined)[][] = [['Código', 'Fornecedor', 'Item', 'Crítico', 'Situação', 'Mês', 'Qualidade', 'Entrega', 'Atendimento', 'IQF', 'Classe', 'Observação']];
+    db.suppliers.forEach((s) => s.evals.forEach((e) => { const v = iqf(e); rows.push([s.code, s.name, s.item, s.critical ? 'sim' : 'não', s.status, e.month, e.quality, e.delivery, e.service, v, iqfClass(v), e.note]); }));
+    download(`fornecedores-iqf-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8'); notify('Planilha de fornecedores baixada.');
+  };
+  const exportTrainings = () => {
+    const rows: (string | number | undefined)[][] = [['Código', 'Treinamento', 'Processo', 'Data', 'Carga (h)', 'Instrutor', 'Participante', 'Situação']];
+    db.trainings.forEach((t) => t.participants.forEach((p) => rows.push([t.code, t.title, pname(t.processId), t.date, t.hours, t.instructor, p.name, p.status])));
+    download(`treinamentos-${today()}.csv`, csv(rows), 'text/csv;charset=utf-8'); notify('Planilha de treinamentos baixada.');
   };
   const pick = async (f?: File) => {
     setError('');
@@ -87,6 +103,9 @@ export default function Data() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn" onClick={exportNCs}><FileSpreadsheet />Não conformidades</button>
             <button className="btn" onClick={exportKpis}><FileSpreadsheet />Indicadores</button>
+            <button className="btn" onClick={exportComplaints}><FileSpreadsheet />Reclamações</button>
+            <button className="btn" onClick={exportSuppliers}><FileSpreadsheet />Fornecedores (IQF)</button>
+            <button className="btn" onClick={exportTrainings}><FileSpreadsheet />Treinamentos</button>
             <button className="btn" onClick={exportLog}><FileSpreadsheet />Trilha de auditoria</button>
           </div>
         </section>

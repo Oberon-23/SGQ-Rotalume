@@ -36,7 +36,7 @@ function Sheet({ title, form, code, children, back }: { title: string; form: str
   );
 }
 
-const Box = ({ title, children }: { title: string; children: ReactNode }) => <section className="sbox"><h2>{title}</h2>{children}</section>;
+const Box = ({ title, children }: { title: string; children: ReactNode }) => <section className="sbox" tabIndex={0} aria-label={title}><h2>{title}</h2>{children}</section>;
 const Grid = ({ rows }: { rows: [string, ReactNode][] }) => <dl className="sgrid">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v || '—'}</dd></div>)}</dl>;
 const Signs = ({ who }: { who: [string, string][] }) => <div className="signs">{who.map(([role, name]) => <div key={role}><span className="line" /><b>{name || ' '}</b><small>{role}</small><small>Data: ____/____/______</small></div>)}</div>;
 

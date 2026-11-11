@@ -52,7 +52,7 @@ export default function MyTasks() {
   return (
     <div className="page">
       <div className="page-head">
-        <div><h1>{me ? 'Minhas pendências' : `Pendências de ${name || '…'}`}</h1><p>Tudo que está sob responsabilidade {me ? 'sua' : 'dessa pessoa'}: não conformidades, ações do 5W2H, documentos a revisar, auditorias a conduzir, indicadores a lançar, riscos a reavaliar e decisões da direção.</p></div>
+        <div><h1>{me ? 'Minhas pendências' : `Pendências de ${name || '…'}`}</h1><p>Tudo que está sob responsabilidade {me ? 'sua' : 'dessa pessoa'}: não conformidades, ações do 5W2H, documentos a revisar, auditorias a conduzir, indicadores a lançar, riscos a reavaliar, decisões da direção, reclamações, aprovações de documentos e treinamentos a avaliar.</p></div>
         {user.role === 'gestor' && (
           <label className="field" style={{ minWidth: 240 }}><span>Ver pendências de</span>
             <select className="input" value={who} onChange={(e) => setWho(e.target.value)}>{people(db).map((p) => <option key={p}>{p}</option>)}</select>

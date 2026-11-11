@@ -577,3 +577,4 @@ td.sel input, th.sel input { width: 17px; height: 17px; accent-color: var(--acce
 }
 .obj-nums b { white-space: nowrap; } @media (max-width: 700px) { .obj-nums b { font-size: 15px; } }
 .cmatrix td.cm.warn { font-size: 18px; }
+@media (max-width: 1280px) { .demo-help { display: none; } }

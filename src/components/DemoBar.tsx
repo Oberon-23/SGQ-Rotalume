@@ -56,7 +56,7 @@ export default function TopBar({ onSearch, onHelp }: { onSearch: () => void; onH
       <label className="demo-user">
         <UserRound size={16} aria-hidden="true" />
         <span className="sr-only">Ver o sistema como</span>
-        <select className="input" value={user.id} onChange={(e) => { setUser(e.target.value); const u = USERS.find((x) => x.id === e.target.value)!; notify(`Agora você está como ${u.name} (${ROLE_LABEL[u.role].toLowerCase()}).`); }}>
+        <select className="input" title={ROLE_HELP[user.role]} value={user.id} onChange={(e) => { setUser(e.target.value); const u = USERS.find((x) => x.id === e.target.value)!; notify(`Agora você está como ${u.name} (${ROLE_LABEL[u.role].toLowerCase()}).`); }}>
           {USERS.map((u) => <option key={u.id} value={u.id}>{u.name} · {ROLE_LABEL[u.role]}</option>)}
         </select>
       </label>

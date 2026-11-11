@@ -10,7 +10,7 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:4173', locale: 'pt-BR', trace: 'retain-on-failure' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'celular', use: { ...devices['Pixel 7'] }, testMatch: /tour|acessibilidade/ },
+    { name: 'celular', use: { ...devices['Pixel 7'] }, testMatch: /tour|acessibilidade|robustez/ },
   ],
   webServer: { command: 'npm run preview -- --port 4173 --strictPort', url: 'http://localhost:4173', reuseExistingServer: !process.env.CI },
 });
