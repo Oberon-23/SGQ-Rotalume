@@ -8,7 +8,13 @@ Sistema web de gestão da qualidade (SGQ) aderente à ISO 9001:2015, construído
 
 > Projeto de portfólio de **Breno Silva**, focado em engenharia de processos e qualidade. Os dados são fictícios.
 
-![Painel](docs/painel.png)
+## Em 30 segundos
+
+- **Problema:** em muita indústria a qualidade vive em planilhas soltas. Os prazos das ações se perdem, ninguém sabe quem alterou o quê e a auditoria vira mutirão.
+- **O que fiz:** um sistema web com sete módulos da ISO 9001:2015. A não conformidade segue o PDCA e o sistema não deixa pular etapa: sem causa raiz não há plano, sem verificação de eficácia não há encerramento. Tem perfis de acesso, trilha de auditoria e relatório em PDF.
+- **Como sei que funciona:** 166 testes de ponta a ponta, incluindo acessibilidade, rodam a cada envio no GitHub. Abre sem cadastro, em modo demonstração.
+
+![Demonstração: painel, lista de não conformidades e o plano de ação de uma delas](docs/demo.gif)
 
 ## O problema
 
