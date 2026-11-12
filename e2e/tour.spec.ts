@@ -27,3 +27,14 @@ test('o tour chega até o fim sem perder nenhum passo', async ({ page }) => {
   await next.click();
   await expect(page.locator('.tour-pop')).toHaveCount(0);
 });
+
+test('na primeira visita por um link direto, a página pedida abre sem o tour', async ({ page }) => {
+  // é assim que chegam os links "Ver no SGQ" do painel de qualidade
+  await page.goto('/nao-conformidades');
+  await expect(page.getByRole('heading', { level: 1, name: 'Não conformidades' })).toBeVisible();
+  await expect(page).toHaveURL(/\/nao-conformidades$/);
+  await expect(page.locator('.tour-pop')).toHaveCount(0);
+  // o tour continua disponível no botão de ajuda
+  await page.getByRole('button', { name: 'Apresentação do sistema' }).click();
+  await expect(page.locator('.tour-pop')).toBeVisible();
+});

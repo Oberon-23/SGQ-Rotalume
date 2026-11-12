@@ -14,7 +14,10 @@ export default function Layout() {
   const { db, toast, user, mode } = useStore();
   const { pathname } = useLocation();
   const [searching, setSearching] = useState(false);
-  const [touring, setTouring] = useState(() => !tourSeen());
+  // O tour só abre sozinho para quem chega pela página inicial. Quem chega por um link direto
+  // (por exemplo, "Ver no SGQ" no painel de qualidade) fica na página que pediu; o tour
+  // continua no botão de ajuda.
+  const [touring, setTouring] = useState(() => !tourSeen() && pathname === '/');
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
