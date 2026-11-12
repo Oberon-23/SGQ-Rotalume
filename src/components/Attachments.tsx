@@ -5,6 +5,7 @@ import type { Attachment } from '../data/types';
 import { MAX_FILE, MAX_FILES, fmtSize } from '../data/quality';
 import { uid } from '../data/utils';
 import { evidenceUrl, removeEvidence, uploadEvidence } from '../data/cloud';
+import { Confirm } from './ui';
 
 const CLOUD_MAX = 5 * 1024 * 1024;
 const safe = (n: string) => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '-').slice(-80);
@@ -68,6 +69,7 @@ export default function Attachments({ entity, id, canEdit }: { entity: 'ncs' | '
     notify(added.length === 1 ? `${added[0].name} anexado.` : `${added.length} arquivos anexados.`);
     if (input.current) input.current.value = '';
   };
+  const [removendo, setRemovendo] = useState<Attachment | null>(null);
   const remove = (a: Attachment) => { if (a.path) void removeEvidence(a.path); update((d) => { const x = (d[entity] as { id: string; attachments?: Attachment[] }[]).find((y) => y.id === id); if (x) x.attachments = (x.attachments ?? []).filter((y) => y.id !== a.id); }); notify(`${a.name} removido.`); };
   return (
     <section className="card">
@@ -88,11 +90,16 @@ export default function Attachments({ entity, id, canEdit }: { entity: 'ncs' | '
               {a.type.startsWith('image/') && (a.data || urls[a.id]) ? <img src={a.data || urls[a.id].view} alt="" /> : <span className="ficon">{a.type === 'application/pdf' ? <FileText /> : <ImageIcon />}</span>}
               <span className="fmeta"><b title={a.name}>{a.name}</b><span>{fmtSize(a.size)} · {a.user} · {new Date(a.at).toLocaleDateString('pt-BR')}</span></span>
               {(a.data || urls[a.id]) && <a className="btn ghost small" href={a.data || urls[a.id].download} download={a.name} aria-label={`Baixar ${a.name}`}><Download /></a>}
-              {canEdit && <button className="btn ghost small danger" onClick={() => remove(a)} aria-label={`Remover ${a.name}`}><Trash2 /></button>}
+              {canEdit && <button className="btn ghost small danger" onClick={() => setRemovendo(a)} aria-label={`Remover ${a.name}`}><Trash2 /></button>}
             </li>
           ))}
         </ul>
       ) : <p className="muted" style={{ margin: 0, fontSize: 14 }}>Nenhum arquivo anexado.</p>}
+      {removendo && (
+        <Confirm title="Remover evidência?" confirmLabel="Remover" onClose={() => setRemovendo(null)} onConfirm={() => { remove(removendo); setRemovendo(null); }}>
+          <p><b>{removendo.name}</b> sai da lista de evidências{removendo.path ? ' e do armazenamento da empresa' : ''}. Não dá para desfazer.</p>
+        </Confirm>
+      )}
     </section>
   );
 }

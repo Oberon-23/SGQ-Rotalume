@@ -1,0 +1,75 @@
+/* ==========================================================================
+   SGQ Rotalume · refino editorial (mesma linguagem dos painéis Rotalume)
+   Newsreader nos títulos e números, Instrument Sans na interface, mais respiro,
+   tabelas sem grade e movimento contido. Só aparência; não muda comportamento.
+   ========================================================================== */
+@import '@fontsource-variable/instrument-sans/wght.css';
+@import '@fontsource-variable/newsreader/opsz.css';
+
+:root {
+  --font: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --serif: 'Newsreader Variable', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --r: 18px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --shadow: 0 1px 1px rgb(27 29 36 / .03), 0 10px 28px -14px rgb(27 29 36 / .14);
+  --linha-suave: color-mix(in srgb, var(--line) 70%, transparent);
+}
+:root[data-theme='dark'] { --shadow: 0 1px 0 rgb(255 255 255 / .03) inset, 0 12px 30px -16px rgb(0 0 0 / .6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) { --shadow: 0 1px 0 rgb(255 255 255 / .03) inset, 0 12px 30px -16px rgb(0 0 0 / .6); } }
+
+body { font-family: var(--font); font-feature-settings: 'kern' 1; text-rendering: optimizeLegibility; -webkit-tap-highlight-color: transparent; }
+::selection { background: var(--accent-soft); color: var(--ink); }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+a, button, select, input, label, summary { touch-action: manipulation; }
+select { background-color: var(--surface); color: var(--ink); }
+
+/* títulos e números: serifa, onde o olho cai primeiro */
+.page-head h1, .page > h1 { font-family: var(--serif); font-weight: 500; font-size: 34px; letter-spacing: -.02em; line-height: 1.05; }
+.page-head p { margin-top: 8px; }
+.tile .val, .mc-stats .val, .big-num { font-family: var(--serif); font-weight: 500; letter-spacing: -.02em; font-variant-numeric: lining-nums tabular-nums; }
+.tile .val { font-size: 36px; }
+.tile .lab { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); min-height: 2.9em; align-items: flex-start; } /* números alinhados */
+.brand b { letter-spacing: -.01em; }
+
+/* cartões e blocos com mais respiro */
+.page { gap: 24px; padding-top: 32px; }
+.card, .tile { border-color: var(--linha-suave); box-shadow: var(--shadow); }
+.card { padding: 22px 24px; }
+.tile { padding: 18px 20px; gap: 6px; }
+.card > h2, .card-h h2 { font-size: 16.5px; font-weight: 650; letter-spacing: -.01em; }
+.side { border-right-color: var(--linha-suave); }
+
+/* tabelas sem grade (Butterick): só um fio sob o cabeçalho */
+th { background: transparent; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); }
+td { border-bottom-color: var(--linha-suave); }
+tbody tr { transition: background-color .15s var(--ease); }
+tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+
+/* controles: transições só de cor; nada de transition: all */
+.btn, .nav a, .seg button, .chip, .pill { transition: background-color .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), box-shadow .15s var(--ease), opacity .15s var(--ease), transform .15s var(--ease); }
+.btn { box-shadow: none; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.primary:hover { box-shadow: 0 6px 16px -8px var(--accent); }
+
+/* entrada das telas */
+@keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.page > * { animation: entrar .32s var(--ease) both; }
+.page > *:nth-child(2) { animation-delay: .03s; }
+.page > *:nth-child(3) { animation-delay: .06s; }
+.page > *:nth-child(n + 4) { animation-delay: .09s; }
+@media (prefers-reduced-motion: reduce) {
+  .page > * { animation: none; }
+  .btn, .nav a, .seg button, .chip, .pill, tbody tr { transition: none; }
+}
+
+/* pular para o conteúdo */
+.pular { position: absolute; left: 16px; top: -60px; z-index: 100; background: var(--accent); color: var(--accent-ink); padding: 8px 16px; border-radius: 8px; font-weight: 600; text-decoration: none; }
+.pular:focus { top: 8px; }
+.conteudo { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.conteudo:focus { outline: none; }
+
+/* tour: os botões ficam presos no rodapé do balão; o texto rola por cima, os botões nunca somem */
+.tour-pop .tour-f { position: sticky; bottom: -16px; margin: 0 -18px -16px; padding: 12px 18px 16px; background: var(--surface); border-top: 1px solid var(--linha-suave); }
+/* nada alarga a página no celular (mesma regra dos painéis): sem rolagem lateral */
+html, body { overflow-x: clip; }

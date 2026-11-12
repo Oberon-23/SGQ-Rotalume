@@ -110,7 +110,7 @@ export function ReviewDetail() {
             </div>
           </div>
           <label className="field full"><span>Participantes</span><input className="input" disabled={ro} value={r.participants} onChange={(e) => set((x) => { x.participants = e.target.value; })} placeholder="Nome e função de quem participou" /></label>
-          <label className="field full"><span>Mudanças em questões internas e externas (9.3.2 b)</span><textarea className="input" disabled={ro} value={r.context} onChange={(e) => set((x) => { x.context = e.target.value; })} placeholder="Novos clientes, mudanças de mercado, legislação, estrutura da empresa..." /></label>
+          <label className="field full"><span>Mudanças em questões internas e externas (9.3.2 b)</span><textarea className="input" disabled={ro} value={r.context} onChange={(e) => set((x) => { x.context = e.target.value; })} placeholder="Novos clientes, mudanças de mercado, legislação, estrutura da empresa…" /></label>
         </div>
       </section>
       <section className="card">

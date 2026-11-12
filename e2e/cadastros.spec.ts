@@ -77,6 +77,6 @@ test('revisão de documento passa por três pessoas diferentes', async ({ page }
 
 test('pendências mostram reclamações, aprovações e treinamentos da pessoa', async ({ page }) => {
   await open(page, '/minhas-pendencias');
-  await expect(page.locator('main, .main')).toContainText('IT-L2-003');
-  await expect(page.locator('main, .main')).toContainText('TR-2026-04');
+  await expect(page.locator('#conteudo')).toContainText('IT-L2-003');
+  await expect(page.locator('#conteudo')).toContainText('TR-2026-04');
 });

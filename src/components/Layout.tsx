@@ -60,6 +60,7 @@ export default function Layout() {
   ];
   return (
     <div className="app">
+      <a className="pular" href="#conteudo">Pular para o conteúdo</a>
       <aside className="side">
         <div className="side-top">
           <NavLink to="/" className="brand"><span className="logo"><ShieldCheck /></span><div><b>SGQ Rotalume</b><small>Indústria · empresa fictícia</small></div></NavLink>
@@ -83,7 +84,7 @@ export default function Layout() {
       </aside>
       <div className="main">
         <TopBar onSearch={() => setSearching(true)} onHelp={() => setTouring(true)} />
-        <Outlet />
+        <main id="conteudo" tabIndex={-1} className="conteudo"><Outlet /></main>
         <footer className="foot">Projeto de portfólio de Breno Silva · Rotalume é uma empresa fictícia e todos os dados são simulados.</footer>
       </div>
       {toast && <Toast key={toast.id} msg={toast.msg} />}

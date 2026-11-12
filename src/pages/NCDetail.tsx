@@ -105,7 +105,7 @@ export default function NCDetail() {
             <label className="field"><span>Gravidade</span><select className="input" disabled={ro} value={nc.severity} onChange={(e) => set((n) => { n.severity = e.target.value as Severity; })}>{(['Menor', 'Maior', 'Crítica'] as Severity[]).map((o) => <option key={o}>{o}</option>)}</select></label>
             <label className="field"><span>Prazo</span><input className="input" type="date" disabled={ro} value={nc.dueAt} onChange={(e) => set((n) => { n.dueAt = e.target.value; })} /></label>
             <label className="field full"><span>Responsável</span><input className="input" disabled={ro} value={nc.owner} onChange={(e) => set((n) => { n.owner = e.target.value; })} /></label>
-            <label className="field full"><span>Contenção imediata</span><textarea className="input" disabled={ro} value={nc.containment} onChange={(e) => set((n) => { n.containment = e.target.value; })} placeholder="Segregar o lote, inspecionar 100%, avisar o cliente..." /></label>
+            <label className="field full"><span>Contenção imediata</span><textarea className="input" disabled={ro} value={nc.containment} onChange={(e) => set((n) => { n.containment = e.target.value; })} placeholder="Segregar o lote, inspecionar 100%, avisar o cliente…" /></label>
           </div>
         </section>
       )}
